@@ -1,10 +1,10 @@
-# Valencia Basket
+# Valencia Basket Horizon
 
-Repositorio oficial del proyecto Valencia Basket.
+Repositorio oficial del proyecto Valencia Basket Horizon.
 
 ## Descripción
 
-Este repositorio contiene el código y recursos relacionados con el proyecto de Valencia Basket.
+Este repositorio contiene el código y recursos relacionados con el proyecto de Valencia Basket Horizon.
 
 ## Instalación
 
