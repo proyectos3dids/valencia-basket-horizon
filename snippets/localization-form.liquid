@@ -262,7 +262,7 @@
                 selected
               {% endif %}
             >
-              {{ language.endonym_name | capitalize }}
+              {% if language.iso_code == 'ca' %}Valencià{% else %}{{ language.endonym_name | capitalize }}{% endif %}
             </option>
           {%- endfor -%}
         </select>
