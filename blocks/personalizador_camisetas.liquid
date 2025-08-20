@@ -36,7 +36,7 @@
   </div>
   
   <div class="customization-controls" id="customization-controls">
-    {% if block.settings.show_advanced_controls and product.template_suffix == 'demo' %}
+    {% if block.settings.show_advanced_controls %}
     <!-- Configuración del Nombre -->
     <div class="control-group">
       <h4>{{ 'products.product.customization.name_settings' | t | default: 'Configuración del Nombre' }}</h4>
