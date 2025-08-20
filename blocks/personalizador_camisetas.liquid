@@ -2,6 +2,11 @@
   Sección de personalización de camisetas con sliders para configurar posición y tamaño
 {% endcomment %}
 
+<script>
+  // Establecer variable global para el estado de los controles avanzados
+  window.personalizadorDebugMode = {{ block.settings.show_advanced_controls | json }} && '{{ template.name }}' === 'demo';
+</script>
+
 <div class="product-customization-settings">
   {%- comment -%}
       <h3>{{ 'products.product.customization.settings_title' | t | default: 'Configuración de Personalización' }}</h3>
@@ -14,20 +19,24 @@
       <div class="customization-option active" data-value="none" onclick="selectCustomizationType(this)">
         <span class="option-text">Sin personalización</span>
       </div>
+      {% if block.settings.enable_player_option %}
       <div class="customization-option" data-value="player" onclick="selectCustomizationType(this)">
         <span class="option-text">Jugador</span>
         <span class="option-price">+15€</span>
       </div>
+      {% endif %}
+      {% if block.settings.enable_custom_option %}
       <div class="customization-option" data-value="user" onclick="selectCustomizationType(this)">
         <span class="option-text">Personalizado</span>
         <span class="option-price">+15€</span>
       </div>
+      {% endif %}
     </div>
     <input type="hidden" id="customization_type" name="customization_type" value="none">
   </div>
   
   <div class="customization-controls" id="customization-controls">
-    {% if block.settings.debug_mode %}
+    {% if block.settings.show_advanced_controls and template.name == 'demo' %}
     <!-- Configuración del Nombre -->
     <div class="control-group">
       <h4>{{ 'products.product.customization.name_settings' | t | default: 'Configuración del Nombre' }}</h4>
@@ -135,7 +144,8 @@
   
   <!-- Selector de jugadores (dinámico desde metaobjeto) -->
    {% assign metaobject_definition = block.settings.players_metaobject_definition | default: 'custom_jugadores' %}
-   {% assign jugadores_metaobject_def = metaobjects[metaobject_definition] %}
+  {% assign jugadores_metaobject_def = metaobjects[metaobject_definition] %}
+  {% assign jugadores_metaobject_list = jugadores_metaobject_def.values %}
    
    <div id="customization_player_wrapper" class="customization-player-wrapper" hidden>
      <div class="customization-field">
@@ -144,7 +154,7 @@
          <select id="customization_player" name="customization_player" class="customization-select">
            <option value="">Selecciona un jugador...</option>
            {% if jugadores_metaobject_def.values_count > 0 %}
-             {% for jugador in jugadores_metaobject_def.values %}
+             {% for jugador in jugadores_metaobject_list %}
                {% assign jugador_nombre = jugador.jugador.value | upcase %}
                {% assign jugador_dorsal = jugador.dorsal.value %}
                {% assign jugador_handle = jugador_nombre | handleize %}
@@ -188,7 +198,7 @@
     <div class="customization-field">
       <label for="customization_user_name">Nombre:</label>
       <div class="field">
-        <input type="text" id="customization_user_name" name="customization_user_name" maxlength="{{ block.settings.max_name_length | default: 15 }}" placeholder="Ingresa tu nombre" class="field__input">
+        <input type="text" id="customization_user_name" name="customization_user_name" maxlength="{{ block.settings.max_name_length | default: 15 }}" pattern="[A-Za-zÀ-ÿ\s]*" placeholder="Ingresa tu nombre" class="field__input">
       </div>
     </div>
     <div class="customization-field">
@@ -209,8 +219,51 @@
     const radioButtons = document.querySelectorAll('input[name="horizontal-alignment"]');
     const manualPositionDiv = document.querySelector('.manual-position');
     
-    // Activar placeholder automáticamente si el modo debug está activo
-    {% if block.settings.debug_mode %}
+    // Prevenir números en el campo de nombre
+    const nameInput = document.querySelector('#customization_user_name');
+    if (nameInput) {
+      nameInput.addEventListener('keypress', function(e) {
+        // Permitir teclas de control (backspace, delete, etc.)
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+        
+        // Bloquear números (códigos 48-57)
+        if (e.charCode >= 48 && e.charCode <= 57) {
+          e.preventDefault();
+        }
+      });
+      
+      // También prevenir pegar números
+      nameInput.addEventListener('paste', function(e) {
+        setTimeout(() => {
+          this.value = this.value.replace(/[0-9]/g, '');
+        }, 0);
+      });
+    }
+    
+    // Sobrescribir función global para validar opciones habilitadas
+    const originalSelectCustomizationType = window.selectCustomizationType;
+    window.selectCustomizationType = function(element) {
+      const playerEnabled = {{ block.settings.enable_player_option | json }};
+      const customEnabled = {{ block.settings.enable_custom_option | json }};
+      const value = element.dataset.value;
+      
+      // Prevenir selección de opciones deshabilitadas
+      if ((value === 'player' && !playerEnabled) || 
+          (value === 'user' && !customEnabled)) {
+        return; // No hacer nada si la opción está deshabilitada
+      }
+      
+      // Llamar a la función original si la opción está habilitada
+      if (originalSelectCustomizationType) {
+        originalSelectCustomizationType(element);
+      }
+    };
+    
+    // Validar opciones habilitadas al cargar
+    validateCustomizationOptions();
+    
+    // Activar placeholder automáticamente si los controles avanzados están activos
+    {% if block.settings.show_advanced_controls and template.name == 'demo' %}
     activateDebugPlaceholder();
     {% endif %}
     
@@ -227,14 +280,48 @@
       }
     }
     
+    // Validar opciones habilitadas
+    function validateCustomizationOptions() {
+      const playerEnabled = {{ block.settings.enable_player_option | json }};
+      const customEnabled = {{ block.settings.enable_custom_option | json }};
+      
+      // Si no hay opciones habilitadas, mantener solo "Sin personalización"
+      if (!playerEnabled && !customEnabled) {
+        const noneOption = document.querySelector('.customization-option[data-value="none"]');
+        if (noneOption && !noneOption.classList.contains('active')) {
+          selectCustomizationType(noneOption);
+        }
+      }
+      
+      // Si la opción activa está deshabilitada, cambiar a "Sin personalización"
+      const activeOption = document.querySelector('.customization-option.active');
+      if (activeOption) {
+        const activeValue = activeOption.dataset.value;
+        if ((activeValue === 'player' && !playerEnabled) || 
+            (activeValue === 'user' && !customEnabled)) {
+          const noneOption = document.querySelector('.customization-option[data-value="none"]');
+          if (noneOption) {
+            selectCustomizationType(noneOption);
+          }
+        }
+      }
+    }
+    
     // Función para activar placeholder automáticamente en modo debug
     function activateDebugPlaceholder() {
+      const playerEnabled = {{ block.settings.enable_player_option | json }};
+      const customEnabled = {{ block.settings.enable_custom_option | json }};
+      
       // Esperar a que el ProductCustomization esté inicializado
       setTimeout(() => {
-        // Activar tipo de personalización 'player'
+        // Solo activar tipo de personalización 'player' si está habilitado
         const customizationTypeSelect = document.querySelector('#customization_type');
-        if (customizationTypeSelect) {
+        if (customizationTypeSelect && playerEnabled) {
           customizationTypeSelect.value = 'player';
+          customizationTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        } else if (customizationTypeSelect && customEnabled) {
+          // Si player no está habilitado pero custom sí, usar custom
+          customizationTypeSelect.value = 'user';
           customizationTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
         
@@ -331,8 +418,6 @@
 
 <style>
   .product-customization-settings {
-    background: #f8f8f8;
-    padding: 20px;
     border-radius: 8px;
     margin: 20px 0;
   }
@@ -713,19 +798,16 @@
   "class": "section-product-customization",
   "settings": [
     {
-      "type": "header",
-      "content": "Configuración de Depuración"
-    },
-    {
       "type": "checkbox",
-      "id": "debug_mode",
-      "label": "Modo Depuración",
-      "info": "Mostrar controles de configuración avanzada (nombre, dorsal y alineación)",
+      "id": "show_advanced_controls",
+      "label": "Mostrar controles de configuración avanzada",
+      "info": "Mostrar controles de configuración avanzada (nombre, dorsal y alineación). Solo se debe activar en la plantilla de producto llamada 'demo'",
       "default": false
     },
     {
       "type": "header",
-      "content": "Configuración del Nombre"
+      "content": "Configuración del Nombre",
+      "info": "Solo visible cuando los controles avanzados están activados"
     },
     {
       "type": "range",
@@ -735,7 +817,8 @@
       "step": 1,
       "unit": "px",
       "label": "Tamaño del Nombre",
-      "default": 37
+      "default": 37,
+      "visible_if": "{{ block.settings.show_advanced_controls }}"
     },
     {
       "type": "range",
@@ -745,7 +828,8 @@
       "step": 1,
       "label": "Altura del Nombre Base (0-9)",
       "info": "Cada paso representa 10%. Valor 0 = 0%, valor 9 = 90%",
-      "default": 1
+      "default": 1,
+      "visible_if": "{{ block.settings.show_advanced_controls }}"
     },
     {
       "type": "range",
@@ -755,7 +839,8 @@
       "step": 1,
       "label": "Fine Tune del Nombre (0-9)",
       "info": "Ajuste fino que se suma al valor base. Total = (Base × 10) + Fine Tune",
-      "default": 5
+      "default": 5,
+      "visible_if": "{{ block.settings.show_advanced_controls }}"
     },
      {
       "type": "range",
@@ -765,11 +850,13 @@
       "step": 1,
       "label": "Radio de Curvatura del Nombre (Deshabilitado)",
       "default": 0,
-      "info": "Esta opción está deshabilitada debido a problemas de funcionalidad"
+      "info": "Esta opción está deshabilitada debido a problemas de funcionalidad",
+      "visible_if": "{{ block.settings.show_advanced_controls }}"
     },
     {
       "type": "header",
-      "content": "Configuración del Dorsal"
+      "content": "Configuración del Dorsal",
+      "info": "Solo visible cuando los controles avanzados están activados"
     },
     {
       "type": "range",
@@ -779,7 +866,8 @@
       "step": 5,
       "unit": "px",
       "label": "Tamaño del Dorsal",
-      "default": 160
+      "default": 160,
+      "visible_if": "{{ block.settings.show_advanced_controls }}"
     },
     {
       "type": "range",
@@ -789,7 +877,8 @@
       "step": 1,
       "label": "Altura del Dorsal Base (0-9)",
       "info": "Cada paso representa 10%. Valor 0 = 0%, valor 9 = 90%",
-      "default": 4
+      "default": 4,
+      "visible_if": "{{ block.settings.show_advanced_controls }}"
     },
     {
       "type": "range",
@@ -799,11 +888,13 @@
       "step": 1,
       "label": "Fine Tune del Dorsal (0-9)",
       "info": "Ajuste fino que se suma al valor base. Total = (Base × 10) + Fine Tune",
-      "default": 5
+      "default": 5,
+      "visible_if": "{{ block.settings.show_advanced_controls }}"
     },
     {
       "type": "header",
-      "content": "Alineación Horizontal"
+      "content": "Alineación Horizontal",
+      "info": "Solo visible cuando los controles avanzados están activados"
     },
     {
       "type": "radio",
@@ -819,7 +910,8 @@
           "label": "Posición Manual"
         }
       ],
-      "default": "auto"
+      "default": "auto",
+      "visible_if": "{{ block.settings.show_advanced_controls }}"
     },
     {
       "type": "range",
@@ -829,27 +921,37 @@
       "step": 0.1,
       "label": "Posición Horizontal Manual (0-1)",
       "info": "Solo se usa cuando la alineación es manual. 0 = izquierda, 0.5 = centro, 1 = derecha",
-      "default": 0.5
+      "default": 0.5,
+      "visible_if": "{{ block.settings.show_advanced_controls }}"
+    },
+    {
+      "type": "header",
+      "content": "Opciones de Personalización"
+    },
+
+    {
+      "type": "checkbox",
+      "id": "enable_player_option",
+      "label": "Habilitar opción de Jugador",
+      "info": "Permite a los usuarios seleccionar jugadores predefinidos",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_custom_option",
+      "label": "Habilitar opción Personalizado",
+      "info": "Permite a los usuarios crear personalizaciones propias",
+      "default": true
     },
     {
       "type": "header",
       "content": "Configuración de Jugadores"
     },
     {
-      "type": "select",
+      "type": "text",
       "id": "players_metaobject_definition",
       "label": "Definición de Metaobjeto de Jugadores",
-      "info": "Selecciona qué definición de metaobjeto usar para poblar la lista de jugadores",
-      "options": [
-        {
-          "value": "custom_jugadores",
-          "label": "Jugadores Masculinos (custom_jugadores)"
-        },
-        {
-          "value": "custom_jugadoras",
-          "label": "Jugadoras Femeninas (custom_jugadoras)"
-        }
-      ],
+      "info": "Handle de la definición de metaobjeto que contiene los jugadores (ej: custom_jugadores)",
       "default": "custom_jugadores"
     },
     {

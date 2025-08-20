@@ -1,6 +1,7 @@
 {% comment %}
-  Snippet para poblar jugadores dinámicamente desde metaobjeto
+  Snippet para poblar jugadores dinámicamente desde definición de metaobjeto
   Uso: {% render 'customization-players', metaobject_definition: 'custom_jugadores' %}
+  Obtiene automáticamente TODAS las entradas de la definición especificada
 {% endcomment %}
 
 {% comment %}
@@ -19,7 +20,7 @@
   <select id="customization_player" class="customization-select">
     <option value="">{{ 'products.product.customization.select_player_placeholder' | t | default: 'Selecciona un jugador...' }}</option>
     {% if jugadores_metaobject_def.values_count > 0 %}
-      {% for jugador in jugadores_metaobject_def.values %}
+      {% for jugador in jugadores_metaobject %}
         {% assign jugador_nombre = jugador.jugador.value | upcase %}
         {% assign jugador_dorsal = jugador.dorsal.value %}
         {% assign jugador_handle = jugador_nombre | handleize %}
