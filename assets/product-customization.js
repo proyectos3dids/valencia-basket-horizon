@@ -3,42 +3,108 @@ const CUSTOMIZATION_PLAYER_CHANGE_EVENT = "customization_player_change",
   CUSTOMIZATION_SPONSOR_CHANGE_EVENT = "customization_sponsor_change";
 async function loadCustomFont() {
   try {
+    console.log('🔤 Starting font loading process...');
     await document.fonts.ready;
 
+    // Verificar si la fuente ya está disponible desde CSS
+    const isDaggerSquareAvailable = document.fonts.check('16px DaggerSquare');
+    console.log('🔤 DaggerSquare available from CSS:', isDaggerSquareAvailable);
     
+    if (isDaggerSquareAvailable) {
+      console.log('✅ DaggerSquare font already loaded from CSS');
+      return;
+    }
+
     // Usar la URL de la fuente desde las configuraciones inyectadas
     const fontUrl = window.productCustomizerSettings?.fontUrl || '/assets/daggersquare.ttf';
+    console.log('🔤 Font URL:', fontUrl);
 
-    
+    // Verificar si el archivo de fuente es accesible
+    try {
+      const response = await fetch(fontUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        throw new Error(`Font file not accessible: ${response.status}`);
+      }
+      console.log('✅ Font file is accessible');
+    } catch (fetchError) {
+      console.error('❌ Font file fetch error:', fetchError);
+      throw fetchError;
+    }
+
     // Cargar explícitamente la fuente DaggerSquare
-    const fontFace = new FontFace('DaggerSquare', `url('${fontUrl}')`);
+    console.log('🔤 Loading font with FontFace API...');
+    const fontFace = new FontFace('DaggerSquare', `url('${fontUrl}')`, {
+      style: 'normal',
+      weight: 'normal',
+      display: 'swap'
+    });
+    
     await fontFace.load();
     document.fonts.add(fontFace);
+    console.log('✅ Font loaded and added to document.fonts');
 
+    // Verificar que la fuente esté realmente disponible
+    const isNowAvailable = document.fonts.check('16px DaggerSquare');
+    console.log('🔤 Font check after loading:', isNowAvailable);
     
-    // Esperar un poco más para asegurar que la fuente esté disponible
-    setTimeout(() => {
-
-    }, 300);
+    if (!isNowAvailable) {
+      console.warn('⚠️ Font loaded but not immediately available');
+      // Esperar un poco más
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const finalCheck = document.fonts.check('16px DaggerSquare');
+      console.log('🔤 Final font check:', finalCheck);
+    }
     
   } catch (error) {
-    console.error('Error loading custom font:', error);
-    // Fallback timeout en caso de error
-    setTimeout(() => {
-
-    }, 500);
+    console.error('❌ Error loading custom font:', error);
+    console.log('🔤 Falling back to system fonts');
+    
+    // Intentar cargar con URL relativa como fallback
+    try {
+      console.log('🔤 Trying fallback font loading...');
+      const fallbackFontFace = new FontFace('DaggerSquare', "url('/assets/daggersquare.ttf')");
+      await fallbackFontFace.load();
+      document.fonts.add(fallbackFontFace);
+      console.log('✅ Fallback font loaded successfully');
+    } catch (fallbackError) {
+      console.error('❌ Fallback font loading also failed:', fallbackError);
+    }
   }
 }
 async function initializeCanvas(renderFn) {
   try {
-
+    console.log('🎨 Initializing canvas...');
+    
     await document.fonts.ready;
+    console.log('✅ Document fonts ready');
+    
     await loadCustomFont();
+    console.log('✅ Custom font loading completed');
+    
+    // Esperar un poco más para asegurar que todo esté listo
     await new Promise(resolve => setTimeout(resolve, 100));
-
+    
+    // Verificar una vez más que la fuente esté disponible antes de renderizar
+    const fontAvailable = document.fonts.check('16px DaggerSquare');
+    console.log('🎨 Font available before rendering:', fontAvailable);
+    
+    if (!fontAvailable) {
+      console.warn('⚠️ DaggerSquare font not available, using fallback');
+    }
+    
+    console.log('🎨 Calling render function...');
     renderFn();
+    console.log('✅ Canvas initialization completed');
+    
   } catch (error) {
-    console.error("Error en la inicialización:", error);
+    console.error("❌ Error en la inicialización:", error);
+    // Intentar renderizar de todos modos con fuentes del sistema
+    console.log('🎨 Attempting to render with system fonts...');
+    try {
+      renderFn();
+    } catch (renderError) {
+      console.error('❌ Render function also failed:', renderError);
+    }
   }
 }
 class SearchParamsHandler {

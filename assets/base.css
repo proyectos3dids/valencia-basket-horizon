@@ -6,6 +6,17 @@
   font-display: swap;
 }
 
+/* Ensure DaggerSquare font is preloaded and available */
+@supports (font-display: swap) {
+  @font-face {
+    font-family: 'DaggerSquare';
+    src: url('daggersquare.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
