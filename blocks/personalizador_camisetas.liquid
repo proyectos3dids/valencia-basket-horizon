@@ -4,7 +4,7 @@
 
 <script>
   // Establecer variable global para el estado de los controles avanzados
-  window.personalizadorDebugMode = {{ block.settings.show_advanced_controls | json }} && '{{ template.name }}' === 'demo';
+  window.personalizadorDebugMode = {{ block.settings.show_advanced_controls | json }} && '{{ product.template_suffix }}' === 'demo';
 </script>
 
 <div class="product-customization-settings">
@@ -36,7 +36,7 @@
   </div>
   
   <div class="customization-controls" id="customization-controls">
-    {% if block.settings.show_advanced_controls and template.name == 'demo' %}
+    {% if block.settings.show_advanced_controls and product.template_suffix == 'demo' %}
     <!-- Configuración del Nombre -->
     <div class="control-group">
       <h4>{{ 'products.product.customization.name_settings' | t | default: 'Configuración del Nombre' }}</h4>
@@ -263,7 +263,7 @@
     validateCustomizationOptions();
     
     // Activar placeholder automáticamente si los controles avanzados están activos
-    {% if block.settings.show_advanced_controls and template.name == 'demo' %}
+    {% if block.settings.show_advanced_controls and product.template_suffix == 'demo' %}
     activateDebugPlaceholder();
     {% endif %}
     
