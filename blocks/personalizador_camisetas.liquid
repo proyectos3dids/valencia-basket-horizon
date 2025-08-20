@@ -1,0 +1,884 @@
+{% comment %}
+  Sección de personalización de camisetas con sliders para configurar posición y tamaño
+{% endcomment %}
+
+<div class="product-customization-settings">
+  {%- comment -%}
+      <h3>{{ 'products.product.customization.settings_title' | t | default: 'Configuración de Personalización' }}</h3>
+  {%- endcomment -%}
+  
+  <!-- Selector de tipo de personalización -->
+  <div class="customization-type-wrapper">
+    <label class="customization-label">Tipo de personalización:</label>
+    <div class="customization-options">
+      <div class="customization-option active" data-value="none" onclick="selectCustomizationType(this)">
+        <span class="option-text">Sin personalización</span>
+      </div>
+      <div class="customization-option" data-value="player" onclick="selectCustomizationType(this)">
+        <span class="option-text">Jugador</span>
+        <span class="option-price">+15€</span>
+      </div>
+      <div class="customization-option" data-value="user" onclick="selectCustomizationType(this)">
+        <span class="option-text">Personalizado</span>
+        <span class="option-price">+15€</span>
+      </div>
+    </div>
+    <input type="hidden" id="customization_type" name="customization_type" value="none">
+  </div>
+  
+  <div class="customization-controls" id="customization-controls">
+    {% if block.settings.debug_mode %}
+    <!-- Configuración del Nombre -->
+    <div class="control-group">
+      <h4>{{ 'products.product.customization.name_settings' | t | default: 'Configuración del Nombre' }}</h4>
+      
+      <div class="slider-control">
+        <label for="name-size-slider">{{ 'products.product.customization.name_size' | t | default: 'Tamaño Nombre (px)' }}</label>
+        <div class="field">
+          <input type="range" id="name-size-slider" min="20" max="100" value="{{ block.settings.name_size | default: 37 }}" class="field__input customization-slider" data-setting="nameSize">
+        </div>
+        <span class="slider-value">{{ block.settings.name_size | default: 37 }}px</span>
+      </div>
+      
+      <div class="slider-control">
+        <label for="name-height-slider">{{ 'products.product.customization.name_height' | t | default: 'Altura Nombre Base (0-90%)' }}</label>
+        <div class="field">
+          <input type="range" id="name-height-slider" min="0" max="9" step="1" value="{{ block.settings.name_height_base | default: 1 }}" class="field__input customization-slider" data-setting="nameHeightBase">
+        </div>
+         <span class="slider-value">{{ block.settings.name_height_base | times: 10 | default: 10 }}%</span>
+      </div>
+      
+      <div class="slider-control">
+         <label for="name-fine-tune-slider">{{ 'products.product.customization.name_fine_tune' | t | default: 'Ajuste fino Nombre (+0-9%)' }}</label>
+         <div class="field">
+           <input type="range" id="name-fine-tune-slider" min="0" max="9" step="1" value="{{ block.settings.name_fine_tune | default: 5 }}" class="field__input customization-slider" data-setting="nameFineTune">
+         </div>
+          <span class="slider-value">+{{ block.settings.name_fine_tune | default: 5 }}%</span>
+       </div>
+      
+      <div class="slider-control" style="display: none;">
+        <label for="name-curve-slider">{{ 'products.product.customization.name_curve' | t | default: 'Curvatura Nombre' }}</label>
+        <input type="range" id="name-curve-slider" min="0" max="500" value="0" class="customization-slider" data-setting="nameCurve" disabled>
+        <span class="slider-value">0</span>
+      </div>
+    </div>
+    
+    <!-- Configuración del Dorsal -->
+    <div class="control-group">
+      <h4>{{ 'products.product.customization.number_settings' | t | default: 'Configuración del Dorsal' }}</h4>
+      
+      <div class="slider-control">
+        <label for="number-size-slider">{{ 'products.product.customization.number_size' | t | default: 'Tamaño Dorsal (px)' }}</label>
+        <div class="field">
+          <input type="range" id="number-size-slider" min="30" max="250" step="5" value="{{ block.settings.number_size | default: 160 }}" class="field__input customization-slider" data-setting="numberSize">
+        </div>
+        <span class="slider-value">{{ block.settings.number_size | default: 160 }}px</span>
+      </div>
+      
+      <div class="slider-control">
+        <label for="number-height-base-slider">{{ 'products.product.customization.number_height' | t | default: 'Altura Dorsal Base (0-90%)' }}</label>
+        <div class="field">
+          <input type="range" id="number-height-base-slider" min="0" max="9" value="{{ block.settings.number_height_base | default: 4 }}" class="field__input customization-slider" data-setting="numberHeightBase">
+        </div>
+        <span class="slider-value" id="number-height-base-value">{{ block.settings.number_height_base | default: 4 | times: 10 }}%</span>
+      </div>
+      <div class="slider-control">
+        <label for="number-fine-tune-slider">{{ 'products.product.customization.number_fine_tune' | t | default: 'Ajuste fino Dorsal (+0-9%)' }}</label>
+        <div class="field">
+          <input type="range" id="number-fine-tune-slider" min="0" max="9" value="{{ block.settings.number_fine_tune | default: 5 }}" class="field__input customization-slider" data-setting="numberFineTune">
+        </div>
+         <span class="slider-value" id="number-fine-tune-value">+{{ block.settings.number_fine_tune | default: 5 }}%</span>
+        </div>
+    </div>
+    
+    <!-- Configuración de Alineación Horizontal -->
+    <div class="control-group">
+      <h4>{{ 'products.product.customization.alignment_settings' | t | default: 'Alineación Horizontal' }}</h4>
+      
+      <div class="alignment-control">
+        <input type="radio" id="alignment-auto" name="horizontal-alignment" value="auto" {% if block.settings.horizontal_alignment == 'auto' or block.settings.horizontal_alignment == blank %}checked{% endif %} data-setting="horizontalAlignment">
+        <label for="alignment-auto">{{ 'products.product.customization.alignment_auto' | t | default: 'Centrado Automático' }}</label>
+      </div>
+      
+      <div class="alignment-control">
+        <input type="radio" id="alignment-manual" name="horizontal-alignment" value="manual" {% if block.settings.horizontal_alignment == 'manual' %}checked{% endif %} data-setting="horizontalAlignment">
+        <label for="alignment-manual">{{ 'products.product.customization.alignment_manual' | t | default: 'Posición Manual' }}</label>
+      </div>
+      
+      <div class="slider-control manual-position" {% unless block.settings.horizontal_alignment == 'manual' %}style="display: none;"{% endunless %}>
+        <label for="horizontal-position-slider">{{ 'products.product.customization.horizontal_position' | t | default: 'Posición Horizontal (%)' }}</label>
+        <div class="field">
+          <input type="range" id="horizontal-position-slider" min="0" max="100" value="{{ block.settings.horizontal_position | times: 100 | default: 50 }}" class="field__input customization-slider" data-setting="horizontalPosition">
+        </div>
+        <span class="slider-value">{{ block.settings.horizontal_position | times: 100 | default: 50 }}%</span>
+      </div>
+    </div>
+    
+    <!-- Indicaciones para el usuario en modo debug -->
+    <div class="debug-instructions">
+      <div class="instruction-box">
+        <h4>📝 Instrucciones de Configuración</h4>
+        <p><strong>¡Importante!</strong> Una vez que hayas ajustado todos los sliders y posiciones:</p>
+        <ol>
+          <li>Anota todos los valores mostrados en los sliders</li>
+          <li>Guarda estos valores en la configuración de la sección</li>
+          <li>Desactiva el modo debug para ocultar estos controles</li>
+        </ol>
+        <div class="values-note">
+          <strong>💡 Tip:</strong> Los valores se actualizan en tiempo real en la imagen del producto.
+        </div>
+      </div>
+    </div>
+    
+  {% endif %}
+    </div>
+  
+  <!-- Selector de jugadores (dinámico desde metaobjeto) -->
+   {% assign metaobject_definition = block.settings.players_metaobject_definition | default: 'custom_jugadores' %}
+   {% assign jugadores_metaobject_def = metaobjects[metaobject_definition] %}
+   
+   <div id="customization_player_wrapper" class="customization-player-wrapper" hidden>
+     <div class="customization-field">
+       <label for="customization_player">Jugador</label>
+       <div class="customization-select-wrapper">
+         <select id="customization_player" name="customization_player" class="customization-select">
+           <option value="">Selecciona un jugador...</option>
+           {% if jugadores_metaobject_def.values_count > 0 %}
+             {% for jugador in jugadores_metaobject_def.values %}
+               {% assign jugador_nombre = jugador.jugador.value | upcase %}
+               {% assign jugador_dorsal = jugador.dorsal.value %}
+               {% assign jugador_handle = jugador_nombre | handleize %}
+               <option 
+                 value="{{ jugador_handle }}" 
+                 data-name="{{ jugador_nombre }}" 
+                 data-number="{{ jugador_dorsal }}"
+               >
+                 {{ jugador_nombre }} - #{{ jugador_dorsal }}
+               </option>
+             {% endfor %}
+           {% else %}
+             <!-- Jugadores de prueba mientras se configura el metaobjeto -->
+             <option value="chris-jones" data-name="CHRIS JONES" data-number="1">CHRIS JONES - #1</option>
+             <option value="sergio-de-la-fuente" data-name="SERGIO DE LA FUENTE" data-number="5">SERGIO DE LA FUENTE - #5</option>
+             <option value="jean-montero" data-name="JEAN MONTERO" data-number="7">JEAN MONTERO - #7</option>
+             <option value="stefan-jovic" data-name="STEFAN JOVIC" data-number="10">STEFAN JOVIC - #10</option>
+             <option value="victor-claver" data-name="VICTOR CLAVER" data-number="12">VICTOR CLAVER - #12</option>
+             <option value="webb-simpson" data-name="WEBB SIMPSON" data-number="15">WEBB SIMPSON - #15</option>
+             <option value="rafa-martinez" data-name="RAFA MARTINEZ" data-number="20">RAFA MARTINEZ - #20</option>
+             <option value="josep-puerto" data-name="JOSEP PUERTO" data-number="23">JOSEP PUERTO - #23</option>
+           {% endif %}
+         </select>
+         <svg
+           aria-hidden="true"
+           focusable="false"
+           class="icon icon-caret"
+           width="8"
+           height="13"
+           viewBox="0 0 8 13"
+         >
+           {%- render 'icon', icon: 'double-sided-caret' -%}
+         </svg>
+       </div>
+     </div>
+   </div>
+  {% render 'customization-players', metaobject_definition: block.settings.players_metaobject_definition %}
+  
+  <!-- Campos de usuario personalizado -->
+  <div id="customization_user_wrapper" class="customization-user-wrapper" hidden>
+    <div class="customization-field">
+      <label for="customization_user_name">Nombre:</label>
+      <div class="field">
+        <input type="text" id="customization_user_name" name="customization_user_name" maxlength="{{ block.settings.max_name_length | default: 15 }}" placeholder="Ingresa tu nombre" class="field__input">
+      </div>
+    </div>
+    <div class="customization-field">
+      <label for="customization_user_number">Número:</label>
+      <div class="field">
+        <input type="text" id="customization_user_number" name="customization_user_number" maxlength="{{ block.settings.max_number_digits | default: 2 }}" pattern="[0-9]*" inputmode="numeric" placeholder="Número" class="field__input">
+      </div>
+    </div>
+  </div>
+
+<!-- Hidden fields moved to buy-buttons block within product form -->
+
+<script>
+  
+  // Actualizar configuraciones en tiempo real
+  document.addEventListener('DOMContentLoaded', function() {
+    const sliders = document.querySelectorAll('.customization-slider');
+    const radioButtons = document.querySelectorAll('input[name="horizontal-alignment"]');
+    const manualPositionDiv = document.querySelector('.manual-position');
+    
+    // Activar placeholder automáticamente si el modo debug está activo
+    {% if block.settings.debug_mode %}
+    activateDebugPlaceholder();
+    {% endif %}
+    
+    // Función para actualizar valores
+    function updateSetting(setting, value) {
+      if (window.productCustomizerSettings) {
+        window.productCustomizerSettings[setting] = value;
+        
+        // Disparar evento personalizado para que el canvas se actualice
+        const event = new CustomEvent('customization-settings-changed', {
+          detail: { setting, value, settings: window.productCustomizerSettings }
+        });
+        document.dispatchEvent(event);
+      }
+    }
+    
+    // Función para activar placeholder automáticamente en modo debug
+    function activateDebugPlaceholder() {
+      // Esperar a que el ProductCustomization esté inicializado
+      setTimeout(() => {
+        // Activar tipo de personalización 'player'
+        const customizationTypeSelect = document.querySelector('#customization_type');
+        if (customizationTypeSelect) {
+          customizationTypeSelect.value = 'player';
+          customizationTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        
+        // Esperar un poco más para que se inicialice el selector de jugadores
+        setTimeout(() => {
+          // Seleccionar el primer jugador disponible como placeholder
+          const playerSelect = document.querySelector('#customization_player');
+          if (playerSelect && playerSelect.options.length > 1) {
+            // Seleccionar la primera opción que no sea el placeholder vacío
+            playerSelect.selectedIndex = 1;
+            playerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Navegar automáticamente a la segunda imagen
+            setTimeout(() => {
+              const slideshow = document.querySelector('slideshow-component');
+              if (slideshow && slideshow.select) {
+                slideshow.select(1);
+              }
+            }, 500);
+          }
+        }, 500);
+      }, 1000);
+    }
+    
+    // Manejar sliders
+    sliders.forEach((slider, index) => {
+      const valueSpan = slider.nextElementSibling;
+      
+      slider.addEventListener('input', function() {
+        const setting = this.dataset.setting;
+        let value = parseFloat(this.value);
+        
+        // Manejar diferentes tipos de configuraciones
+        if (setting === 'nameHeightBase') {
+          // Para nameHeightBase, mostrar el porcentaje (valor * 10)
+          valueSpan.textContent = (value * 10) + '%';
+          updateSetting(setting, value);
+          // Recalcular nameHeight total
+           const fineTune = window.productCustomizerSettings.nameFineTune || 5;
+           const totalHeight = (value * 10 + fineTune) / 100;
+           updateSetting('nameHeight', totalHeight);
+        } else if (setting === 'nameFineTune') {
+          // Para nameFineTune, mostrar +número%
+          valueSpan.textContent = '+' + value + '%';
+          updateSetting(setting, value);
+          // Recalcular nameHeight total
+           const baseHeight = window.productCustomizerSettings.nameHeightBase || 1;
+           const totalHeight = (baseHeight * 10 + value) / 100;
+           updateSetting('nameHeight', totalHeight);
+        } else if (setting === 'numberHeightBase') {
+          // Para numberHeightBase, mostrar el porcentaje (valor * 10)
+          valueSpan.textContent = (value * 10) + '%';
+          updateSetting(setting, value);
+          // Recalcular numberHeight total
+            const fineTune = window.productCustomizerSettings.numberFineTune || 5;
+           const totalHeight = (value * 10 + fineTune) / 100;
+           updateSetting('numberHeight', totalHeight);
+        } else if (setting === 'numberFineTune') {
+          // Para numberFineTune, mostrar +número%
+          valueSpan.textContent = '+' + value + '%';
+          updateSetting(setting, value);
+          // Recalcular numberHeight total
+           const baseHeight = window.productCustomizerSettings.numberHeightBase || 4;
+           const totalHeight = (baseHeight * 10 + value) / 100;
+           updateSetting('numberHeight', totalHeight);
+        } else if (setting === 'numberHeight' || setting === 'horizontalPosition') {
+          value = value / 100;
+          valueSpan.textContent = Math.round(value * 100) + '%';
+          updateSetting(setting, value);
+        } else {
+          valueSpan.textContent = value + (setting.includes('Size') ? 'px' : '');
+          updateSetting(setting, value);
+        }
+      });
+    });
+    
+    // Manejar radio buttons de alineación
+    radioButtons.forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.checked) {
+          updateSetting('alignmentMode', this.value);
+          
+          // Mostrar/ocultar slider de posición manual
+          if (this.value === 'manual') {
+            manualPositionDiv.style.display = 'block';
+          } else {
+            manualPositionDiv.style.display = 'none';
+          }
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  .product-customization-settings {
+    background: #f8f8f8;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
+  
+  .customization-type-wrapper {
+    margin-bottom: 20px;
+  }
+  
+  .customization-type-wrapper label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  
+  .customization-type-wrapper select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+  }
+  
+  .customization-controls {
+    display: grid;
+    gap: 20px;
+  }
+  
+  .control-group {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+  }
+  
+  .control-group h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 16px;
+  }
+  
+  .slider-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .slider-control label {
+    min-width: 150px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .customization-slider {
+    flex: 1;
+    height: 6px;
+    background: var(--color-input-background, #ddd);
+    border-radius: 3px;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity 0.2s, box-shadow var(--animation-speed) ease, background-color var(--animation-speed) ease;
+    appearance: none;
+    border: none;
+    padding: 0;
+  }
+  
+  .customization-slider:hover {
+    opacity: 1;
+    background-color: var(--color-input-hover-background, #ccc);
+  }
+  
+  .customization-slider:focus {
+    box-shadow: var(--input-box-shadow-focus, 0 0 0 2px rgba(0, 124, 186, 0.3));
+  }
+  
+  .customization-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--color-primary, #007cba);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--color-background, #fff);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .customization-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-primary, #007cba);
+    cursor: pointer;
+    border: 2px solid var(--color-background, #fff);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .slider-value {
+    min-width: 60px;
+    text-align: right;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  /* Estilos para las indicaciones de debug */
+  .debug-instructions {
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .instruction-box {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+  }
+  
+  .instruction-box h4 {
+    margin: 0 0 15px 0;
+    color: #856404;
+    font-size: 18px;
+    font-weight: bold;
+  }
+  
+  .instruction-box p {
+    margin: 0 0 15px 0;
+    color: #856404;
+    font-size: 14px;
+  }
+  
+  .instruction-box ol {
+    margin: 0 0 15px 0;
+    padding-left: 20px;
+    color: #856404;
+  }
+  
+  .instruction-box li {
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  .values-note {
+    background: rgba(255, 255, 255, 0.7);
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 4px solid #28a745;
+    margin-top: 15px;
+  }
+  
+  .values-note strong {
+    color: #155724;
+  }
+  
+  .alignment-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  
+  .alignment-control input[type="radio"] {
+    margin: 0;
+  }
+  
+  .alignment-control label {
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+  }
+  
+  .manual-position {
+    margin-left: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+  }
+  
+  /* Estilos para campos de personalización */
+  .customization-player-wrapper,
+  .customization-user-wrapper {
+    margin-top: 10px;
+  }
+
+  .customization-select-wrapper {
+    display: flex;
+    position: relative;
+    border: var(--style-border-width-inputs) solid var(--color-border);
+    border-radius: var(--style-border-radius-inputs);
+    align-items: center;
+    margin-top: var(--margin-2xs);
+    overflow: clip;
+    transition: background-color var(--animation-speed) var(--animation-easing),
+      border-color var(--animation-speed) var(--animation-easing);
+  }
+
+  .customization-select-wrapper:hover {
+    border-color: var(--color-variant-hover-border);
+  }
+
+  .customization-select {
+    padding-block: var(--padding-md);
+    padding-inline: var(--padding-lg) calc(var(--padding-lg) + var(--icon-size-2xs));
+    appearance: none;
+    border: 0;
+    width: 100%;
+    margin: 0;
+    cursor: pointer;
+    font: inherit;
+    background-color: var(--color-background);
+    color: currentcolor;
+  }
+
+  .customization-select:focus-visible {
+    outline: var(--focus-outline-width) solid currentcolor;
+    outline-offset: var(--focus-outline-offset);
+  }
+
+  .customization-select-wrapper .icon {
+    position: absolute;
+    right: var(--padding-md);
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--icon-size-2xs);
+    height: var(--icon-size-2xs);
+    pointer-events: none;
+  }
+  
+  .customization-field {
+    margin-bottom: 15px;
+  }
+  
+  .customization-field:last-child {
+    margin-bottom: 0;
+  }
+  
+  .customization-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .customization-field .field {
+    margin-top: 0;
+  }
+  
+  .customization-field .field__input {
+     font-size: var(--font-paragraph--size);
+   }
+  
+  
+  
+  @media (max-width: 768px) {
+    .slider-control {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .slider-control label {
+      min-width: auto;
+      margin-bottom: 5px;
+    }
+  }
+</style>
+</div>
+
+<script src="{{ 'product-customization.js' | asset_url }}" defer></script>
+
+
+<script>
+  // Exponer configuraciones a JavaScript
+  window.productCustomizerSettings = {
+    nameSize: {{ block.settings.name_size | default: 37 }},
+    nameHeight: {{ block.settings.name_height_base | default: 1 | times: 10 | plus: block.settings.name_fine_tune | default: 5 | divided_by: 100.0 }},
+    nameHeightBase: {{ block.settings.name_height_base | default: 1 }},
+    numberSize: {{ block.settings.number_size | default: 160 }},
+    numberHeight: {{ block.settings.number_height_base | default: 4 | times: 10 | plus: block.settings.number_fine_tune | default: 5 | divided_by: 100.0 }},
+    numberHeightBase: {{ block.settings.number_height_base | default: 4 }},
+    numberFineTune: {{ block.settings.number_fine_tune | default: 5 }},
+    alignmentMode: '{{ block.settings.horizontal_alignment | default: "auto" }}',
+    horizontalPosition: {{ block.settings.horizontal_position | default: 0.5 }},
+    maxNameLength: {{ block.settings.max_name_length | default: 15 }},
+    maxNumberDigits: {{ block.settings.max_number_digits | default: 2 }},
+    fontUrl: '{{ "daggersquare.ttf" | asset_url | prepend: shop.url }}' // URL completa del asset con dominio de la tienda
+  };
+  
+  // Inicializar event listeners para los sliders de debug
+  document.addEventListener('DOMContentLoaded', function() {
+    const sliders = document.querySelectorAll('.customization-slider');
+    
+    sliders.forEach(slider => {
+      slider.addEventListener('input', function(e) {
+        const setting = e.target.dataset.setting;
+        const value = parseFloat(e.target.value);
+        
+        // Actualizar el valor mostrado
+        const valueSpan = e.target.closest('.slider-control').querySelector('.slider-value');
+        if (valueSpan) {
+          switch(setting) {
+            case 'nameSize':
+              valueSpan.textContent = value + 'px';
+              window.productCustomizerSettings.nameSize = value;
+              break;
+            case 'nameHeightBase':
+              valueSpan.textContent = (value * 10) + '%';
+              window.productCustomizerSettings.nameHeightBase = value;
+              // Recalcular nameHeight combinando base + fine tune
+              const nameFineTune = window.productCustomizerSettings.nameFineTune || 5;
+              window.productCustomizerSettings.nameHeight = (value * 10 + nameFineTune) / 100;
+              break;
+            case 'nameFineTune':
+              valueSpan.textContent = '+' + value + '%';
+              window.productCustomizerSettings.nameFineTune = value;
+              // Recalcular nameHeight combinando base + fine tune
+              const nameHeightBase = window.productCustomizerSettings.nameHeightBase || 1;
+              window.productCustomizerSettings.nameHeight = (nameHeightBase * 10 + value) / 100;
+              break;
+            case 'numberSize':
+              valueSpan.textContent = value + 'px';
+              window.productCustomizerSettings.numberSize = value;
+              break;
+            case 'numberHeightBase':
+              valueSpan.textContent = (value * 10) + '%';
+              window.productCustomizerSettings.numberHeightBase = value;
+              // Recalcular numberHeight combinando base + fine tune
+              const numberFineTune = window.productCustomizerSettings.numberFineTune || 5;
+              window.productCustomizerSettings.numberHeight = (value * 10 + numberFineTune) / 100;
+              break;
+            case 'numberFineTune':
+              valueSpan.textContent = '+' + value + '%';
+              window.productCustomizerSettings.numberFineTune = value;
+              // Recalcular numberHeight combinando base + fine tune
+              const numberHeightBase = window.productCustomizerSettings.numberHeightBase || 4;
+              window.productCustomizerSettings.numberHeight = (numberHeightBase * 10 + value) / 100;
+              break;
+            case 'horizontalPosition':
+              valueSpan.textContent = value;
+              window.productCustomizerSettings.horizontalPosition = value;
+              break;
+          }
+        }
+        
+        // Disparar evento personalizado para que el canvas se actualice
+        const customEvent = new CustomEvent('customization-settings-changed', {
+          detail: { setting, value }
+        });
+        document.dispatchEvent(customEvent);
+      });
+    });
+    
+    // Manejar cambios en el radio button de alineación
+    const alignmentRadios = document.querySelectorAll('input[name="horizontal_alignment"]');
+    alignmentRadios.forEach(radio => {
+      radio.addEventListener('change', function(e) {
+        window.productCustomizerSettings.alignmentMode = e.target.value;
+        
+        // Mostrar/ocultar el slider de posición manual
+        const manualPositionDiv = document.querySelector('.manual-position');
+        if (manualPositionDiv) {
+          manualPositionDiv.style.display = e.target.value === 'manual' ? 'block' : 'none';
+        }
+        
+        // Disparar evento personalizado
+        const customEvent = new CustomEvent('customization-settings-changed', {
+          detail: { setting: 'alignmentMode', value: e.target.value }
+        });
+        document.dispatchEvent(customEvent);
+      });
+    });
+  });
+
+</script>
+
+{% schema %}
+{
+  "name": "Personalización Camiseta",
+  "tag": "section",
+  "class": "section-product-customization",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Configuración de Depuración"
+    },
+    {
+      "type": "checkbox",
+      "id": "debug_mode",
+      "label": "Modo Depuración",
+      "info": "Mostrar controles de configuración avanzada (nombre, dorsal y alineación)",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Configuración del Nombre"
+    },
+    {
+      "type": "range",
+      "id": "name_size",
+      "min": 20,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "label": "Tamaño del Nombre",
+      "default": 37
+    },
+    {
+      "type": "range",
+      "id": "name_height_base",
+      "min": 0,
+      "max": 9,
+      "step": 1,
+      "label": "Altura del Nombre Base (0-9)",
+      "info": "Cada paso representa 10%. Valor 0 = 0%, valor 9 = 90%",
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "name_fine_tune",
+      "min": 0,
+      "max": 9,
+      "step": 1,
+      "label": "Fine Tune del Nombre (0-9)",
+      "info": "Ajuste fino que se suma al valor base. Total = (Base × 10) + Fine Tune",
+      "default": 5
+    },
+     {
+      "type": "range",
+      "id": "name_curve",
+      "min": 0,
+      "max": 0,
+      "step": 1,
+      "label": "Radio de Curvatura del Nombre (Deshabilitado)",
+      "default": 0,
+      "info": "Esta opción está deshabilitada debido a problemas de funcionalidad"
+    },
+    {
+      "type": "header",
+      "content": "Configuración del Dorsal"
+    },
+    {
+      "type": "range",
+      "id": "number_size",
+      "min": 30,
+      "max": 250,
+      "step": 5,
+      "unit": "px",
+      "label": "Tamaño del Dorsal",
+      "default": 160
+    },
+    {
+      "type": "range",
+      "id": "number_height_base",
+      "min": 0,
+      "max": 9,
+      "step": 1,
+      "label": "Altura del Dorsal Base (0-9)",
+      "info": "Cada paso representa 10%. Valor 0 = 0%, valor 9 = 90%",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "number_fine_tune",
+      "min": 0,
+      "max": 9,
+      "step": 1,
+      "label": "Fine Tune del Dorsal (0-9)",
+      "info": "Ajuste fino que se suma al valor base. Total = (Base × 10) + Fine Tune",
+      "default": 5
+    },
+    {
+      "type": "header",
+      "content": "Alineación Horizontal"
+    },
+    {
+      "type": "radio",
+      "id": "horizontal_alignment",
+      "label": "Tipo de Alineación",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Centrado Automático"
+        },
+        {
+          "value": "manual",
+          "label": "Posición Manual"
+        }
+      ],
+      "default": "auto"
+    },
+    {
+      "type": "range",
+      "id": "horizontal_position",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "label": "Posición Horizontal Manual (0-1)",
+      "info": "Solo se usa cuando la alineación es manual. 0 = izquierda, 0.5 = centro, 1 = derecha",
+      "default": 0.5
+    },
+    {
+      "type": "header",
+      "content": "Configuración de Jugadores"
+    },
+    {
+      "type": "select",
+      "id": "players_metaobject_definition",
+      "label": "Definición de Metaobjeto de Jugadores",
+      "info": "Selecciona qué definición de metaobjeto usar para poblar la lista de jugadores",
+      "options": [
+        {
+          "value": "custom_jugadores",
+          "label": "Jugadores Masculinos (custom_jugadores)"
+        },
+        {
+          "value": "custom_jugadoras",
+          "label": "Jugadoras Femeninas (custom_jugadoras)"
+        }
+      ],
+      "default": "custom_jugadores"
+    },
+    {
+      "type": "header",
+      "content": "Límites de Personalización"
+    },
+    {
+      "type": "range",
+      "id": "max_name_length",
+      "min": 5,
+      "max": 20,
+      "step": 1,
+      "label": "Máximo de caracteres para el nombre",
+      "default": 15
+    },
+    {
+      "type": "range",
+      "id": "max_number_digits",
+      "min": 1,
+      "max": 3,
+      "step": 1,
+      "label": "Máximo de dígitos para el dorsal",
+      "default": 2
+    }
+  ],
+  "presets": [
+    {
+      "name": "Personalización Camiseta"
+    }
+  ]
+}
+{% endschema %}

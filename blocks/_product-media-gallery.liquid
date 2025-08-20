@@ -138,6 +138,16 @@
     {% for media in sorted_media %}
       {% capture children %}
         {%- render 'product-media', media: media -%}
+        {% if forloop.index == 2 %}
+          <!-- Canvas de personalización superpuesto sobre la segunda imagen -->
+          <canvas 
+            class="customization_canvas" 
+            width="400" 
+            height="600" 
+            data-rendercolor="#FFFFFF"
+            style="position: absolute; top: 0; left: 0; z-index: 10; pointer-events: none;"
+          ></canvas>
+        {% endif %}
       {% endcapture %}
       {% capture class %}
         product-media-container product-media-container--{{ media.media_type }}{% if block.settings.constrain_to_viewport %} constrain-height{% endif %}{% if block.settings.aspect_ratio != 'adapt' %} media-fit{% endif %}{% if block.settings.zoom %} product-media-container--zoomable{% endif %}

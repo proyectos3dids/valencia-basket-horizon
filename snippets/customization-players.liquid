@@ -1,0 +1,46 @@
+{% comment %}
+  Snippet para poblar jugadores dinámicamente desde metaobjeto
+  Uso: {% render 'customization-players', metaobject_definition: 'custom_jugadores' %}
+{% endcomment %}
+
+{% comment %}
+  Usar la definición de metaobjeto pasada como parámetro, o usar custom_jugadores por defecto
+{% endcomment %}
+{% assign metaobject_definition = metaobject_definition | default: 'custom_jugadores' %}
+{% assign jugadores_metaobject_def = metaobjects[metaobject_definition] %}
+{% assign jugadores_metaobject = jugadores_metaobject_def.values %}
+
+{% comment %} Metaobjeto cargado correctamente {% endcomment %}
+
+<div id="customization_player_wrapper" class="customization-group" hidden>
+  <label for="customization_player" class="customization-label">
+    {{ 'products.product.customization.select_player' | t | default: 'Seleccionar Jugador' }}
+  </label>
+  <select id="customization_player" class="customization-select">
+    <option value="">{{ 'products.product.customization.select_player_placeholder' | t | default: 'Selecciona un jugador...' }}</option>
+    {% if jugadores_metaobject_def.values_count > 0 %}
+      {% for jugador in jugadores_metaobject_def.values %}
+        {% assign jugador_nombre = jugador.jugador.value | upcase %}
+        {% assign jugador_dorsal = jugador.dorsal.value %}
+        {% assign jugador_handle = jugador_nombre | handleize %}
+        <option 
+          value="{{ jugador_handle }}" 
+          data-name="{{ jugador_nombre }}" 
+          data-number="{{ jugador_dorsal }}"
+        >
+          {{ jugador_nombre }} - #{{ jugador_dorsal }}
+        </option>
+      {% endfor %}
+    {% else %}
+       <!-- Jugadores de prueba mientras se configura el metaobjeto -->
+      <option value="chris-jones" data-name="CHRIS JONES" data-number="1">CHRIS JONES - #1</option>
+      <option value="sergio-de-la-fuente" data-name="SERGIO DE LA FUENTE" data-number="5">SERGIO DE LA FUENTE - #5</option>
+      <option value="jean-montero" data-name="JEAN MONTERO" data-number="7">JEAN MONTERO - #7</option>
+      <option value="stefan-jovic" data-name="STEFAN JOVIC" data-number="10">STEFAN JOVIC - #10</option>
+      <option value="victor-claver" data-name="VICTOR CLAVER" data-number="12">VICTOR CLAVER - #12</option>
+      <option value="webb-simpson" data-name="WEBB SIMPSON" data-number="15">WEBB SIMPSON - #15</option>
+      <option value="rafa-martinez" data-name="RAFA MARTINEZ" data-number="20">RAFA MARTINEZ - #20</option>
+      <option value="josep-puerto" data-name="JOSEP PUERTO" data-number="23">JOSEP PUERTO - #23</option>
+    {% endif %}
+  </select>
+</div>
