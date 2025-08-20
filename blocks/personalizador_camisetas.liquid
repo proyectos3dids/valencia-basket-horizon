@@ -704,7 +704,7 @@
     horizontalPosition: {{ block.settings.horizontal_position | default: 0.5 }},
     maxNameLength: {{ block.settings.max_name_length | default: 15 }},
     maxNumberDigits: {{ block.settings.max_number_digits | default: 2 }},
-    fontUrl: '{{ "daggersquare.ttf" | asset_url | prepend: shop.url }}' // URL completa del asset con dominio de la tienda
+    fontUrl: '{{ "daggersquare.ttf" | asset_url }}' // URL completa del asset
   };
   
   // Inicializar event listeners para los sliders de debug
