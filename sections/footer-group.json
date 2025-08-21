@@ -177,9 +177,9 @@
               "type": "text",
               "name": "t:names.text",
               "settings": {
-                "text": "<p><strong>Horarios Tienda Oficial:</strong></p><p><strong>De lunes a sábado</strong><br/>10:00-19:00</p><p>*Estos horarios pueden variar los días de partidos, en función de los eventos del recinto y los festivos.</p><p><a href=\"mailto:tienda@valenciabasket.com\" target=\"_blank\" title=\"mailto:tienda@valenciabasket.com\"><strong>tienda@valenciabasket.com</strong></a></p>",
+                "text": "<p><strong>Horarios Tienda Oficial:</strong></p><p><strong>De lunes a sábado</strong><br/>10:00-19:00</p><p><em>*Estos horarios pueden variar los días de partidos, en función de los eventos del recinto y los festivos.</em></p><p><a href=\"mailto:tienda@valenciabasket.com\" target=\"_blank\" title=\"mailto:tienda@valenciabasket.com\"><strong>tienda@valenciabasket.com</strong></a></p>",
                 "width": "100%",
-                "max_width": "narrow",
+                "max_width": "normal",
                 "alignment": "left",
                 "type_preset": "paragraph",
                 "font": "var(--font-body--family)",
