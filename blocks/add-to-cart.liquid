@@ -13,6 +13,7 @@
   assign id = 'BuyButtons-ProductSubmitButton-' | append: block.id
 %}
 
+{% unless block.settings.product.metafields.custom.extra == true %}
 <span
   {{ block.shopify_attributes }}
   style="--add-to-cart-font-case: {{ settings.button_text_case }};"
@@ -25,6 +26,7 @@
     add_to_cart_text: add_to_cart_text
   %}
 </span>
+{% endunless %}
 
 {% schema %}
 {

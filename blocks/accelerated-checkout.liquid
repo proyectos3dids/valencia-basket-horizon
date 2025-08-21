@@ -17,6 +17,7 @@
   endif
 %}
 
+{% unless block.settings.product.metafields.custom.extra == true %}
 <div
   class="accelerated-checkout-block"
   ref="acceleratedCheckoutButtonContainer"
@@ -34,6 +35,7 @@
     {%- endform -%}
   {% endif %}
 </div>
+{% endunless %}
 
 {% stylesheet %}
   .accelerated-checkout-block[data-shopify-visual-preview] {

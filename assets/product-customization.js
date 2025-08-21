@@ -713,6 +713,22 @@ class AddToCartButtonHandler {
        
        const result = await response.json();
        console.log('🛒 Cart add successful:', result);
+       
+       // Disparar evento de actualización del carrito para actualizar en segundo plano
+       const cartResponse = await fetch('/cart.js');
+       const cartData = await cartResponse.json();
+       
+       // Importar el evento necesario
+       const { CartUpdateEvent } = await import('@theme/events');
+       
+       // Disparar evento para actualizar el carrito en segundo plano
+       document.dispatchEvent(new CartUpdateEvent(cartData, 'product-customization', {
+         itemCount: cartData.item_count,
+         source: 'product-customization',
+         didError: false
+       }));
+       
+       console.log('🛒 Cart update event dispatched');
        return result;
        
      } catch (error) {
@@ -734,7 +750,7 @@ class ProductCustomization {
     return !!this.$customizationTypeSelect
   }
   _init() {
-    this.$customizationTypeSelect.addEventListener("change", this._handleCustomizationTypeChange.bind(this)), window.addEventListener(CUSTOMIZATION_PLAYER_CHANGE_EVENT, this._handlePlayerChange.bind(this)), window.addEventListener(CUSTOMIZATION_USER_CHANGE_EVENT, this._handleUserChange.bind(this)), document.addEventListener('customization-settings-changed', this._handleSettingsChange.bind(this)), this._loadPlayerFromSearchParams(), this.form.setSponsor(this.selectedSponsor)
+    this.$customizationTypeSelect.addEventListener("change", this._handleCustomizationTypeChange.bind(this)), window.addEventListener(CUSTOMIZATION_PLAYER_CHANGE_EVENT, this._handlePlayerChange.bind(this)), window.addEventListener(CUSTOMIZATION_USER_CHANGE_EVENT, this._handleUserChange.bind(this)), document.addEventListener('customization-settings-changed', this._handleSettingsChange.bind(this)), document.addEventListener('variant:update', this._handleVariantUpdate.bind(this)), this._loadPlayerFromSearchParams(), this.form.setSponsor(this.selectedSponsor)
   }
   _handleCustomizationTypeChange(ev) {
     const type = ev.target.value;
@@ -802,7 +818,11 @@ class ProductCustomization {
       if (optionsField) {
         optionsField.value = 'Jugador';
       }
-      this._navigateToSecondImage();
+      
+      // Solo navegar a la segunda imagen si hay personalización activa
+      if (detail.name || detail.number) {
+        this._navigateToSecondImage();
+      }
       this.render.draw(detail.name, detail.number, this.selectedSponsor);
     } else {
       this._selectVariant("");
@@ -833,7 +853,12 @@ class ProductCustomization {
     if (optionsField) {
       optionsField.value = hasCustomization ? 'Personalizado' : 'Sin personalización';
     }
-    this._navigateToSecondImage(), this.render.draw(detail.name, detail.number, this.selectedSponsor)
+    
+    // Solo navegar a la segunda imagen si hay personalización activa
+    if (hasCustomization) {
+      this._navigateToSecondImage();
+    }
+    this.render.draw(detail.name, detail.number, this.selectedSponsor)
   }
   _handleSettingsChange(ev) {
 
@@ -855,6 +880,101 @@ class ProductCustomization {
       }
     }
   }
+  _handleVariantUpdate(event) {
+    // Preservar el estado de personalización cuando cambie la variante
+    const currentType = this.$customizationTypeSelect?.value;
+    const currentUrl = new URL(window.location);
+    const currentPlayerParam = currentUrl.searchParams.get('player');
+    
+    console.log('🔄 Variant update detected:', {
+      currentType,
+      currentPlayerParam,
+      url: window.location.href
+    });
+    
+    // Esperar un poco para que el DOM se actualice después del morph
+    setTimeout(() => {
+      // Re-obtener referencias después del morph
+      this.$customizationTypeSelect = document.querySelector("#customization_type");
+      this.variants = {
+        none: document.querySelector('.variant-wrapper input[name="_customization"][value="none"]'),
+        player: document.querySelector('.variant-wrapper input[name="_customization"][value="player"]'),
+        user: document.querySelector('.variant-wrapper input[name="_customization"][value="user"]')
+      };
+      
+      // Reinicializar componentes con las nuevas referencias del DOM
+      this.render = new RenderHandler();
+      this.form = new ProductFormHandler();
+      
+      // Restaurar el tipo de personalización seleccionado
+      if (currentType && this.$customizationTypeSelect) {
+        this.$customizationTypeSelect.value = currentType;
+        this._set(currentType);
+        
+        // Restaurar el estado del botón de añadir al carrito
+        const hasCustomization = currentType !== 'none';
+        this.addToCartHandler.setCustomizationActive(hasCustomization);
+        
+        // Restaurar el campo de opciones
+        const optionsField = document.querySelector('#product_form_customization_options');
+        if (optionsField) {
+          let mappedOption;
+          switch(currentType) {
+            case 'none':
+              mappedOption = 'Sin personalización';
+              break;
+            case 'player':
+              mappedOption = 'Jugador';
+              break;
+            case 'user':
+              mappedOption = 'Personalizado';
+              break;
+            default:
+              mappedOption = currentType;
+          }
+          optionsField.value = mappedOption;
+        }
+        
+        // Verificar si hay parámetros de URL que necesitan ser restaurados
+        const currentUrl = new URL(window.location);
+        const playerParam = currentUrl.searchParams.get('player');
+        
+        console.log('🔍 Checking URL params after DOM update:', {
+          currentType,
+          playerParam,
+          url: window.location.href
+        });
+        
+        // Si había un jugador seleccionado, restaurarlo desde la URL
+        if (currentType === 'player' && playerParam) {
+          console.log('✅ Restoring player state from URL');
+          // Restaurar completamente el estado del jugador desde la URL
+          this._loadPlayerFromSearchParams();
+        } else if (currentType === 'player') {
+          console.log('🧹 Player type but no URL param, clearing');
+          // Si el tipo es player pero no hay parámetro, limpiar
+          this.searchParams.clearPlayer();
+        } else if (currentType === 'user') {
+          console.log('👤 Restoring user customization');
+          // Restaurar personalización de usuario si había datos
+          const nameInput = document.querySelector('#customization_user_name');
+          const numberInput = document.querySelector('#customization_user_number');
+          const name = nameInput?.value || '';
+          const number = numberInput?.value || '';
+          if (name || number) {
+            this._navigateToSecondImage();
+            this.render.draw(name, number, this.selectedSponsor);
+          }
+          // Limpiar parámetro de jugador si estamos en modo usuario
+          this.searchParams.clearPlayer();
+        } else {
+          console.log('🧹 No customization, clearing all params');
+          // Si no hay personalización, limpiar parámetros
+          this.searchParams.clearPlayer();
+        }
+      }
+    }, 100);
+  }
   // _handleSponsorChange(ev) {
   //   const sponsor = ev.detail;
   //   this.selectedSponsor = sponsor, this.form.setSponsor(sponsor), this.render.navigateToImage(sponsor)
@@ -862,7 +982,32 @@ class ProductCustomization {
   _loadPlayerFromSearchParams() {
     const playerParam = this.searchParams.getPlayer(),
       player = this.player.players.find(player2 => player2.handle === playerParam);
-    player ? (this._selectVariant("player"), this.searchParams.setPlayer(player.handle), this.$customizationTypeSelect.selectedIndex = 1, this.sponsor.visible(!0), this.player.selectPlayer(player.handle), this.form.set(player.name, player.number), this._navigateToSecondImage(), this.render.draw(player.name, player.number, this.selectedSponsor)) : (this.$customizationTypeSelect.selectedIndex = 0, this._selectVariant(""))
+    if (player) {
+      console.log('🔄 Restaurando jugador desde URL:', player.handle, player.name, player.number);
+      this._selectVariant("player");
+      
+      // Asegurar que la URL se mantenga actualizada
+      this.searchParams.setPlayer(player.handle);
+      
+      this.$customizationTypeSelect.selectedIndex = 1;
+      this.sponsor.visible(true);
+      this.player.selectPlayer(player.handle);
+      this.form.set(player.name, player.number);
+      
+      // Solo navegar a la segunda imagen si el jugador tiene nombre o número
+      if (player.name || player.number) {
+        this._navigateToSecondImage();
+        console.log('🖼️ Navegando a segunda imagen para jugador:', player.name);
+      }
+      
+      // Forzar regeneración del canvas
+      console.log('🎨 Regenerando canvas para jugador:', player.name, player.number);
+      this.render.draw(player.name, player.number, this.selectedSponsor);
+    } else {
+      console.log('❌ Jugador no encontrado para parámetro:', playerParam);
+      this.$customizationTypeSelect.selectedIndex = 0;
+      this._selectVariant("");
+    }
   }
 
   _navigateToSecondImage() {

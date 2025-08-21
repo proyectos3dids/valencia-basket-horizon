@@ -1,6 +1,8 @@
 
 
-{% render 'quantity-selector', product: block.settings.product %}
+{% unless block.settings.product.metafields.custom.extra == true %}
+  {% render 'quantity-selector', product: block.settings.product %}
+{% endunless %}
 
 {% schema %}
 {
