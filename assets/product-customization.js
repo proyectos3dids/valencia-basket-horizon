@@ -462,13 +462,273 @@ class RenderHandler {
       for (const canvas of this.$canvas) canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height)
   }
 }
+// Clase para manejar la deshabilitación del botón de añadir al carrito
+class AddToCartButtonHandler {
+  constructor() {
+    this.addToCartButton = null;
+    this.addToCartComponent = null;
+    this.isCustomizationActive = false;
+    this._init();
+  }
+
+  _init() {
+    // Intentar encontrar el botón inmediatamente
+    this._findButton();
+    
+    // Si no se encuentra, intentar de nuevo después de un breve delay
+    if (!this.addToCartButton) {
+      setTimeout(() => {
+        this._findButton();
+      }, 100);
+    }
+    
+    // También intentar cuando el DOM esté completamente cargado
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        this._findButton();
+      });
+    }
+  }
+  
+  _findButton() {
+    // Buscar el botón de añadir al carrito
+    this.addToCartComponent = document.querySelector('add-to-cart-component');
+    if (this.addToCartComponent && this.addToCartComponent.refs) {
+      this.addToCartButton = this.addToCartComponent.refs.addToCartButton;
+    }
+    
+    // Si no se encuentra con refs, buscar directamente
+    if (!this.addToCartButton) {
+      this.addToCartButton = document.querySelector('[ref="addToCartButton"]');
+    }
+    
+    // Buscar por ID también
+    if (!this.addToCartButton) {
+      this.addToCartButton = document.querySelector('[id*="BuyButtons-ProductSubmitButton"]');
+    }
+    
+    // Buscar el botón de compra rápida (accelerated checkout)
+    this.quickBuyContainer = document.querySelector('.accelerated-checkout-block');
+    this.quickBuyButton = document.querySelector('.shopify-payment-button__button');
+    
+    console.log('🛒 AddToCartButtonHandler search result:', {
+      component: !!this.addToCartComponent,
+      button: !!this.addToCartButton,
+      buttonId: this.addToCartButton?.id || 'no-id',
+      quickBuyContainer: !!this.quickBuyContainer,
+      quickBuyButton: !!this.quickBuyButton
+    });
+  }
+
+  disableButton() {
+    if (this.addToCartButton && !this.addToCartButton.disabled) {
+      console.log('🛒 Disabling add to cart button due to customization');
+      this.addToCartButton.disabled = true;
+      this.addToCartButton.style.opacity = '0.6';
+      this.addToCartButton.style.cursor = 'not-allowed';
+      
+      // También usar el método del componente si está disponible
+      if (this.addToCartComponent && typeof this.addToCartComponent.disable === 'function') {
+        this.addToCartComponent.disable();
+      }
+    }
+    
+    // Ocultar botón de compra rápida
+    this._hideQuickBuy();
+  }
+
+  enableButton() {
+    if (this.addToCartButton && this.addToCartButton.disabled) {
+      console.log('🛒 Enabling add to cart button - no customization active');
+      this.addToCartButton.disabled = false;
+      this.addToCartButton.style.opacity = '';
+      this.addToCartButton.style.cursor = '';
+      
+      // También usar el método del componente si está disponible
+      if (this.addToCartComponent && typeof this.addToCartComponent.enable === 'function') {
+        this.addToCartComponent.enable();
+      }
+    }
+    
+    // Remover el manejador personalizado si existe
+    this._removeCustomClickHandler();
+  }
+  
+  enableButtonWithCustomBehavior() {
+    if (this.addToCartButton) {
+      console.log('🛒 Enabling add to cart button with custom behavior for customization');
+      this.addToCartButton.disabled = false;
+      this.addToCartButton.style.opacity = '';
+      this.addToCartButton.style.cursor = '';
+      
+      // También usar el método del componente si está disponible
+      if (this.addToCartComponent && typeof this.addToCartComponent.enable === 'function') {
+        this.addToCartComponent.enable();
+      }
+      
+      // Adjuntar el manejador personalizado
+      this._attachCustomClickHandler();
+    }
+  }
+  
+  _attachCustomClickHandler() {
+    if (this.addToCartButton && !this.customClickHandlerAttached) {
+      this.customClickHandler = this._handleCustomAddToCart.bind(this);
+      this.addToCartButton.addEventListener('click', this.customClickHandler, true);
+      this.customClickHandlerAttached = true;
+      console.log('🛒 Custom click handler attached');
+    }
+  }
+  
+  _removeCustomClickHandler() {
+    if (this.addToCartButton && this.customClickHandlerAttached) {
+      this.addToCartButton.removeEventListener('click', this.customClickHandler, true);
+      this.customClickHandlerAttached = false;
+      console.log('🛒 Custom click handler removed');
+    }
+  }
+  
+  _handleCustomAddToCart(event) {
+    if (this.isCustomizationActive) {
+      console.log('🛒 Intercepting add to cart click - using custom AJAX');
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      
+      // Usar la función AJAX personalizada
+      this.addToCartWithCustomization();
+    }
+  }
+
+  setCustomizationActive(isActive) {
+    this.isCustomizationActive = isActive;
+    if (isActive) {
+      this.enableButtonWithCustomBehavior();
+      this._hideQuickBuy();
+    } else {
+      this.enableButton();
+      this._showQuickBuy();
+    }
+  }
+
+  _hideQuickBuy() {
+    if (this.quickBuyContainer) {
+      console.log('🛒 Hiding quick buy button due to customization');
+      this.quickBuyContainer.style.display = 'none';
+    }
+  }
+
+  _showQuickBuy() {
+     if (this.quickBuyContainer) {
+       console.log('🛒 Showing quick buy button - no customization active');
+       this.quickBuyContainer.style.display = '';
+     }
+   }
+
+   // Ajax Cart API function to add base product + customization addon
+   async addToCartWithCustomization() {
+     try {
+       // Get base variant ID from the form
+       const baseVariantId = document.querySelector('input[name="id"]').value;
+       
+       // Get product title and variant title for reference
+       const productTitleElement = document.querySelector('h1');
+       const productTitle = productTitleElement ? productTitleElement.textContent.trim() : '';
+       
+       // Get variant title from the selected variant (if available)
+       const variantTitleElement = document.querySelector('variant-picker script[type="application/json"]');
+       let variantTitle = '';
+       if (variantTitleElement) {
+         try {
+           const variantData = JSON.parse(variantTitleElement.textContent);
+           variantTitle = variantData.title || '';
+         } catch (e) {
+           console.warn('Could not parse variant data:', e);
+         }
+       }
+       
+       // Get customization properties from hidden form fields
+       const playerNameField = document.querySelector('#product_form_player_name');
+       const playerNumberField = document.querySelector('#product_form_player_number');
+       const customizationOptionsField = document.querySelector('#product_form_customization_options');
+       const modeloField = document.querySelector('#product_form_modelo');
+       
+       // Build properties object only if they have values
+       const properties = {};
+       if (playerNameField && playerNameField.value) {
+         properties['Nombre'] = playerNameField.value;
+       }
+       if (playerNumberField && playerNumberField.value) {
+         properties['Dorsal'] = playerNumberField.value;
+       }
+       if (modeloField && modeloField.value) {
+         properties['Modelo'] = modeloField.value;
+       }
+       
+       // Add product and variant titles as reference properties in combined format
+       if (productTitle && variantTitle) {
+         properties['Producto'] = `${productTitle} / ${variantTitle}`;
+       } else if (productTitle) {
+         properties['Producto'] = productTitle;
+       }
+       
+       // Fixed addon variant ID for customization
+       const addonVariantId = 55907473817983;
+       
+       console.log('🛒 Adding to cart with customization:', {
+         baseVariantId,
+         addonVariantId,
+         properties
+       });
+       
+       const items = [
+         { 
+           id: baseVariantId, 
+           quantity: 1
+         },
+         { 
+           id: addonVariantId, 
+           quantity: 1, 
+           parent_id: baseVariantId,
+           properties: Object.keys(properties).length > 0 ? properties : undefined
+         }
+       ];
+       
+       // Clean up undefined properties
+       items.forEach(item => {
+         if (item.properties === undefined) {
+           delete item.properties;
+         }
+       });
+       
+       const response = await fetch('/cart/add.js', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ items })
+       });
+       
+       if (!response.ok) {
+         throw new Error(`HTTP error! status: ${response.status}`);
+       }
+       
+       const result = await response.json();
+       console.log('🛒 Cart add successful:', result);
+       return result;
+       
+     } catch (error) {
+       console.error('🛒 Error adding to cart with customization:', error);
+       throw error;
+     }
+   }
+ }
+
 class ProductCustomization {
   constructor() {
     this.$customizationTypeSelect = document.querySelector("#customization_type"), this.variants = {
       none: document.querySelector('.variant-wrapper input[name="_customization"][value="none"]'),
       player: document.querySelector('.variant-wrapper input[name="_customization"][value="player"]'),
       user: document.querySelector('.variant-wrapper input[name="_customization"][value="user"]')
-    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this._validate() && this._init()
+    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this.addToCartHandler = new AddToCartButtonHandler, this._validate() && this._init()
   }
   _validate() {
     return !!this.$customizationTypeSelect
@@ -479,6 +739,11 @@ class ProductCustomization {
   _handleCustomizationTypeChange(ev) {
     const type = ev.target.value;
     this._set(type);
+    
+    // Manejar el estado del botón de añadir al carrito
+    const hasCustomization = type !== 'none';
+    this.addToCartHandler.setCustomizationActive(hasCustomization);
+    
     // Actualizar campo oculto para las opciones de personalización
     const optionsField = document.querySelector('#product_form_customization_options');
     if (optionsField) {
@@ -504,7 +769,12 @@ class ProductCustomization {
     this._clear(type !== void 0), this.player.visible(type === "player"), this.user.visible(type === "user"), /* this.sponsor.visible(type === "player" || type === "user") - Patrocinadores deshabilitados */ type === "player" ? this._selectVariant("") : this._selectVariant(type)
   }
   _clear(soft = !1) {
-    this.form.clear(), this.render.clear(), this.searchParams.clearPlayer(), soft || (this._selectVariant("none"), this.player.visible(!1), this.user.visible(!1))
+    this.form.clear(), this.render.clear(), this.searchParams.clearPlayer();
+    
+    // Habilitar botón de añadir al carrito cuando se limpia la personalización
+    this.addToCartHandler.setCustomizationActive(false);
+    
+    soft || (this._selectVariant("none"), this.player.visible(!1), this.user.visible(!1))
   }
   _selectVariant(type) {
     const typeMap = {
@@ -523,6 +793,10 @@ class ProductCustomization {
       this._selectVariant("player");
       this.form.set(detail.name, detail.number);
       this.searchParams.setPlayer(detail.handle);
+      
+      // Deshabilitar botón de añadir al carrito cuando hay personalización de jugador
+      this.addToCartHandler.setCustomizationActive(true);
+      
       // Actualizar campo oculto para las opciones de personalización
       const optionsField = document.querySelector('#product_form_customization_options');
       if (optionsField) {
@@ -535,6 +809,10 @@ class ProductCustomization {
       this.form.clear();
       this.searchParams.clearPlayer();
       this.render.clear();
+      
+      // Habilitar botón de añadir al carrito cuando no hay personalización
+      this.addToCartHandler.setCustomizationActive(false);
+      
       // Limpiar campo oculto para las opciones de personalización
       const optionsField = document.querySelector('#product_form_customization_options');
       if (optionsField) {
@@ -545,10 +823,15 @@ class ProductCustomization {
   _handleUserChange(ev) {
     const detail = ev.detail;
     detail.name ? this.form.setName(detail.name) : this.form.clearName(), detail.number ? this.form.setNumber(detail.number) : this.form.clearNumber();
+    
+    // Verificar si hay alguna personalización activa (nombre o número)
+    const hasCustomization = (detail.name && detail.name.trim() !== '') || (detail.number && detail.number.trim() !== '');
+    this.addToCartHandler.setCustomizationActive(hasCustomization);
+    
     // Actualizar campo oculto para las opciones de personalización
     const optionsField = document.querySelector('#product_form_customization_options');
     if (optionsField) {
-      optionsField.value = 'Personalizado';
+      optionsField.value = hasCustomization ? 'Personalizado' : 'Sin personalización';
     }
     this._navigateToSecondImage(), this.render.draw(detail.name, detail.number, this.selectedSponsor)
   }
