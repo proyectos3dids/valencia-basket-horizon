@@ -204,7 +204,7 @@
               "type": "personalizador_camisetas",
               "name": "Personalizador de Camisetas",
               "settings": {
-                "show_advanced_controls": false,
+                "show_advanced_controls": true,
                 "name_size": 37,
                 "name_height_base": 1,
                 "name_fine_tune": 5,
