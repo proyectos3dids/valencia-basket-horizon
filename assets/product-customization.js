@@ -109,47 +109,131 @@ async function initializeCanvas(renderFn) {
 }
 class SearchParamsHandler {
   constructor() {}
+  
   getPlayer() {
     return new URLSearchParams(window.location.search).get("player")
   }
-  setPlayer(handle) {
-    const params = new URLSearchParams(window.location.search);
-    params.set("player", handle), window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+  
+  getCustomizationType() {
+    return new URLSearchParams(window.location.search).get("type")
   }
+  
+  getGender() {
+    return new URLSearchParams(window.location.search).get("gender")
+  }
+  
+  setPlayer(handle) {
+    console.log('🔧 SearchParamsHandler.setPlayer called with:', handle);
+    const params = new URLSearchParams(window.location.search);
+    console.log('📋 Current URL params before:', params.toString());
+    params.set("player", handle);
+    params.set("type", "player");
+    console.log('📋 New URL params after:', params.toString());
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    console.log('🌐 Setting new URL:', newUrl);
+    window.history.replaceState({}, "", newUrl);
+    console.log('✅ URL updated to:', window.location.href);
+  }
+  
+  setGender(gender) {
+    const params = new URLSearchParams(window.location.search);
+    if (gender) {
+      params.set("gender", gender);
+    } else {
+      params.delete("gender");
+    }
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+  }
+  
+  setCustomizationType(type) {
+    const params = new URLSearchParams(window.location.search);
+    if (type && type !== 'none') {
+      params.set("type", type);
+    } else {
+      params.delete("type");
+    }
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+  }
+  
   clearPlayer() {
     const params = new URLSearchParams(window.location.search);
-    params.delete("player"), window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+    params.delete("player");
+    params.delete("type");
+    params.delete("gender");
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+  }
+  
+  clearAll() {
+    const params = new URLSearchParams(window.location.search);
+    params.delete("player");
+    params.delete("type");
+    params.delete("gender");
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
   }
 }
 class ProductCustomizationPlayer {
   constructor() {
-    this.$playerWrapper = document.querySelector("#customization_player_wrapper"), this.$playerSelectInput = document.querySelector("#customization_player"), this.players = Array.from(this.$playerSelectInput?.options || []).filter(option => option.value).map(option => ({
+    this.$playerWrapper = document.querySelector("#customization_player_wrapper"), this.$playerSelectInput = document.querySelector("#customization_player"), this.players = this.$playerSelectInput ? Array.from(this.$playerSelectInput.querySelectorAll('option')).filter(option => option.value).map(option => ({
       name: option.getAttribute("data-name"),
       number: option.getAttribute("data-number"),
       handle: option.value
-    })), this._validate() && this._init()
+    })) : [], this._validate() && this._init()
   }
   _validate() {
     return this.$playerWrapper && this.$playerSelectInput
   }
   _sortPlayers() {
-    const options = this.$playerSelectInput.querySelectorAll("option"),
-      optionsArray = Array.from(options);
-    optionsArray.sort((a, b) => {
-      if (!a.value) return -1;
-      if (!b.value) return 1;
-      const numberA = parseInt(a.getAttribute("data-number"), 10),
-        numberB = parseInt(b.getAttribute("data-number"), 10);
-      return numberA - numberB
-    }), optionsArray.forEach(option => {
-      this.$playerSelectInput.appendChild(option)
-    })
+    // Verificar si es un producto unisex (tiene optgroups)
+    const optgroups = this.$playerSelectInput.querySelectorAll("optgroup");
+    
+    if (optgroups.length > 0) {
+      // Para productos unisex, ordenar dentro de cada optgroup
+      optgroups.forEach(optgroup => {
+        const options = Array.from(optgroup.querySelectorAll("option"));
+        options.sort((a, b) => {
+          if (!a.value) return -1;
+          if (!b.value) return 1;
+          const numberA = parseInt(a.getAttribute("data-number"), 10),
+            numberB = parseInt(b.getAttribute("data-number"), 10);
+          return numberA - numberB;
+        });
+        // Limpiar optgroup y volver a añadir opciones ordenadas
+        optgroup.innerHTML = '';
+        options.forEach(option => {
+          optgroup.appendChild(option);
+        });
+      });
+    } else {
+      // Para productos normales, preservar la opción por defecto y ordenar el resto
+      const defaultOption = this.$playerSelectInput.querySelector('option[value=""]');
+      const playerOptions = Array.from(this.$playerSelectInput.querySelectorAll('option[value]:not([value=""])'));
+      
+      playerOptions.sort((a, b) => {
+        const numberA = parseInt(a.getAttribute("data-number"), 10),
+          numberB = parseInt(b.getAttribute("data-number"), 10);
+        return numberA - numberB;
+      });
+      
+      // Limpiar select y reconstruir
+      this.$playerSelectInput.innerHTML = '';
+      if (defaultOption) {
+        this.$playerSelectInput.appendChild(defaultOption);
+      }
+      playerOptions.forEach(option => {
+        this.$playerSelectInput.appendChild(option);
+      });
+    }
   }
   _init() {
     this.$playerSelectInput.addEventListener("change", this._handlePlayerChange.bind(this)), this._sortPlayers()
   }
   _handlePlayerChange(ev) {
     const player = this.players.find(player2 => player2.handle === ev.target.value);
+    console.log('🎯 ProductCustomizationPlayer._handlePlayerChange:', {
+      selectedValue: ev.target.value,
+      foundPlayer: player,
+      allPlayers: this.players
+    });
     this._emitCustomEvent({
       name: player?.name,
       number: player?.number,
@@ -174,8 +258,39 @@ class ProductCustomizationPlayer {
   }
   selectPlayer(handle) {
     this.visible(!0);
-    const index = this.players.findIndex(player => player.handle === handle) || 0;
-    this.$playerSelectInput.selectedIndex = index + 1
+    
+    // Buscar la opción directamente en el DOM por su valor
+    const targetOption = this.$playerSelectInput.querySelector(`option[value="${handle}"]`);
+    
+    if (targetOption) {
+      // Para productos unisex, asegurar que el optgroup correcto esté visible
+      const optgroup = targetOption.closest('optgroup');
+      if (optgroup) {
+        const isUnisexProduct = this.$playerSelectInput.querySelectorAll('optgroup').length > 0;
+        if (isUnisexProduct) {
+          const genderValue = optgroup.label.toLowerCase().includes('femenino') ? 'female' : 'male';
+          
+          // Activar el género correcto usando la función global
+          const genderOption = document.querySelector(`.gender-option[data-value="${genderValue}"]`);
+          if (genderOption && window.selectGender) {
+            window.selectGender(genderOption);
+          }
+        }
+      }
+      
+      // Obtener todas las opciones del select (incluyendo las de optgroups)
+      const allOptions = Array.from(this.$playerSelectInput.querySelectorAll('option'));
+      const realIndex = allOptions.indexOf(targetOption);
+      
+      this.$playerSelectInput.selectedIndex = realIndex;
+      
+      // Disparar evento change para sincronizar el nombre del jugador
+      const changeEvent = new Event('change', { bubbles: true });
+      this.$playerSelectInput.dispatchEvent(changeEvent);
+    } else {
+      // Si no se encuentra el jugador, mantener el placeholder (selectedIndex = 0)
+      this.$playerSelectInput.selectedIndex = 0;
+    }
   }
 }
 class ProductCustomizationUser {
@@ -652,6 +767,7 @@ class AddToCartButtonHandler {
        const playerNumberField = document.querySelector('#product_form_player_number');
        const customizationOptionsField = document.querySelector('#product_form_customization_options');
        const modeloField = document.querySelector('#product_form_modelo');
+       const teamPatchField = document.querySelector('#product_form_team_patch');
        
        // Build properties object only if they have values
        const properties = {};
@@ -663,6 +779,9 @@ class AddToCartButtonHandler {
        }
        if (modeloField && modeloField.value) {
          properties['Modelo'] = modeloField.value;
+       }
+       if (teamPatchField && teamPatchField.value) {
+         properties['Parche de equipo'] = teamPatchField.value;
        }
        
        // Add product and variant titles as reference properties in combined format
@@ -750,11 +869,25 @@ class ProductCustomization {
     return !!this.$customizationTypeSelect
   }
   _init() {
-    this.$customizationTypeSelect.addEventListener("change", this._handleCustomizationTypeChange.bind(this)), window.addEventListener(CUSTOMIZATION_PLAYER_CHANGE_EVENT, this._handlePlayerChange.bind(this)), window.addEventListener(CUSTOMIZATION_USER_CHANGE_EVENT, this._handleUserChange.bind(this)), document.addEventListener('customization-settings-changed', this._handleSettingsChange.bind(this)), document.addEventListener('variant:update', this._handleVariantUpdate.bind(this)), this._loadPlayerFromSearchParams(), this.form.setSponsor(this.selectedSponsor)
+    this.$customizationTypeSelect.addEventListener("change", this._handleCustomizationTypeChange.bind(this)), window.addEventListener(CUSTOMIZATION_PLAYER_CHANGE_EVENT, this._handlePlayerChange.bind(this)), window.addEventListener(CUSTOMIZATION_USER_CHANGE_EVENT, this._handleUserChange.bind(this)), document.addEventListener('customization-settings-changed', this._handleSettingsChange.bind(this)), document.addEventListener('variant:update', this._handleVariantUpdate.bind(this)), this._loadFromSearchParams(), this.form.setSponsor(this.selectedSponsor)
   }
   _handleCustomizationTypeChange(ev) {
     const type = ev.target.value;
-    this._set(type);
+    
+    // Verificar si este cambio es parte de la restauración desde URL
+    const currentUrl = new URL(window.location);
+    const urlType = currentUrl.searchParams.get('type');
+    const isRestoringFromUrl = urlType === type;
+    
+    console.log('🔄 _handleCustomizationTypeChange:', { type, urlType, isRestoringFromUrl });
+    
+    // Solo hacer limpieza suave si estamos restaurando desde URL
+    this._set(type, isRestoringFromUrl);
+    
+    // Solo actualizar parámetros de URL si no estamos restaurando
+    if (!isRestoringFromUrl) {
+      this.searchParams.setCustomizationType(type);
+    }
     
     // Manejar el estado del botón de añadir al carrito
     const hasCustomization = type !== 'none';
@@ -781,11 +914,16 @@ class ProductCustomization {
       optionsField.value = mappedOption;
     }
   }
-  _set(type) {
-    this._clear(type !== void 0), this.player.visible(type === "player"), this.user.visible(type === "user"), /* this.sponsor.visible(type === "player" || type === "user") - Patrocinadores deshabilitados */ type === "player" ? this._selectVariant("") : this._selectVariant(type)
+  _set(type, soft = false) {
+    this._clear(soft || type !== void 0), this.player.visible(type === "player"), this.user.visible(type === "user"), /* this.sponsor.visible(type === "player" || type === "user") - Patrocinadores deshabilitados */ type === "player" ? this._selectVariant("") : this._selectVariant(type)
   }
   _clear(soft = !1) {
-    this.form.clear(), this.render.clear(), this.searchParams.clearPlayer();
+    this.form.clear(), this.render.clear();
+    
+    // Solo limpiar parámetros de URL si no es una limpieza suave
+    if (!soft) {
+      this.searchParams.clearAll();
+    }
     
     // Habilitar botón de añadir al carrito cuando se limpia la personalización
     this.addToCartHandler.setCustomizationActive(false);
@@ -805,10 +943,27 @@ class ProductCustomization {
   }
   _handlePlayerChange(ev) {
     const detail = ev.detail;
+    console.log('🔥 ProductCustomization._handlePlayerChange received:', detail);
     if (detail.name && detail.number && detail.handle) {
+      console.log('✅ Valid player data, setting URL params');
       this._selectVariant("player");
       this.form.set(detail.name, detail.number);
       this.searchParams.setPlayer(detail.handle);
+      this.searchParams.setCustomizationType('player');
+      console.log('🌐 URL after setPlayer:', window.location.href);
+      
+      // Para productos unisex, detectar y guardar el género
+      const playerSelect = document.querySelector('#customization_player');
+      if (playerSelect) {
+        const selectedOption = playerSelect.querySelector(`option[value="${detail.handle}"]`);
+        if (selectedOption) {
+          const optgroup = selectedOption.closest('optgroup');
+          if (optgroup) {
+            const genderValue = optgroup.label.toLowerCase().includes('femenino') ? 'female' : 'male';
+            this.searchParams.setGender(genderValue);
+          }
+        }
+      }
       
       // Deshabilitar botón de añadir al carrito cuando hay personalización de jugador
       this.addToCartHandler.setCustomizationActive(true);
@@ -827,7 +982,7 @@ class ProductCustomization {
     } else {
       this._selectVariant("");
       this.form.clear();
-      this.searchParams.clearPlayer();
+      this.searchParams.clearAll();
       this.render.clear();
       
       // Habilitar botón de añadir al carrito cuando no hay personalización
@@ -847,6 +1002,13 @@ class ProductCustomization {
     // Verificar si hay alguna personalización activa (nombre o número)
     const hasCustomization = (detail.name && detail.name.trim() !== '') || (detail.number && detail.number.trim() !== '');
     this.addToCartHandler.setCustomizationActive(hasCustomization);
+    
+    // Actualizar parámetros de URL
+    if (hasCustomization) {
+      this.searchParams.setCustomizationType('user');
+    } else {
+      this.searchParams.clearAll();
+    }
     
     // Actualizar campo oculto para las opciones de personalización
     const optionsField = document.querySelector('#product_form_customization_options');
@@ -909,7 +1071,7 @@ class ProductCustomization {
       // Restaurar el tipo de personalización seleccionado
       if (currentType && this.$customizationTypeSelect) {
         this.$customizationTypeSelect.value = currentType;
-        this._set(currentType);
+        this._set(currentType, true); // Usar limpieza suave para preservar parámetros URL
         
         // Restaurar el estado del botón de añadir al carrito
         const hasCustomization = currentType !== 'none';
@@ -951,9 +1113,26 @@ class ProductCustomization {
           // Restaurar completamente el estado del jugador desde la URL
           this._loadPlayerFromSearchParams();
         } else if (currentType === 'player') {
-          console.log('🧹 Player type but no URL param, clearing');
-          // Si el tipo es player pero no hay parámetro, limpiar
-          this.searchParams.clearPlayer();
+          console.log('🔍 Player type but no URL param - checking if player exists in DOM');
+          // Verificar si hay un jugador seleccionado en el DOM antes de limpiar
+          const selectedPlayerOption = document.querySelector('#customization_player option:checked');
+          const hasSelectedPlayer = selectedPlayerOption && selectedPlayerOption.value && selectedPlayerOption.value !== '';
+          
+          if (!hasSelectedPlayer) {
+            console.log('🧹 No player selected, clearing params');
+            this.searchParams.clearAll();
+          } else {
+            console.log('🎯 Player found in DOM, preserving state');
+          }
+          
+          // Actualizar opciones de personalización visual
+          const customizationOptions = document.querySelectorAll('.customization-option');
+          customizationOptions.forEach(option => {
+            option.classList.remove('active');
+            if (option.dataset.value === 'player') {
+              option.classList.add('active');
+            }
+          });
         } else if (currentType === 'user') {
           console.log('👤 Restoring user customization');
           // Restaurar personalización de usuario si había datos
@@ -966,11 +1145,29 @@ class ProductCustomization {
             this.render.draw(name, number, this.selectedSponsor);
           }
           // Limpiar parámetro de jugador si estamos en modo usuario
-          this.searchParams.clearPlayer();
+          this.searchParams.clearAll();
+          
+          // Actualizar opciones de personalización visual
+          const customizationOptions = document.querySelectorAll('.customization-option');
+          customizationOptions.forEach(option => {
+            option.classList.remove('active');
+            if (option.dataset.value === 'user') {
+              option.classList.add('active');
+            }
+          });
         } else {
           console.log('🧹 No customization, clearing all params');
           // Si no hay personalización, limpiar parámetros
-          this.searchParams.clearPlayer();
+          this.searchParams.clearAll();
+          
+          // Actualizar opciones de personalización visual
+          const customizationOptions = document.querySelectorAll('.customization-option');
+          customizationOptions.forEach(option => {
+            option.classList.remove('active');
+            if (option.dataset.value === 'none') {
+              option.classList.add('active');
+            }
+          });
         }
       }
     }, 100);
@@ -979,17 +1176,73 @@ class ProductCustomization {
   //   const sponsor = ev.detail;
   //   this.selectedSponsor = sponsor, this.form.setSponsor(sponsor), this.render.navigateToImage(sponsor)
   // }
+  _loadFromSearchParams() {
+    const typeParam = this.searchParams.getCustomizationType();
+    const playerParam = this.searchParams.getPlayer();
+    const genderParam = this.searchParams.getGender();
+    
+    console.log('🔄 Cargando estado desde URL:', { type: typeParam, player: playerParam, gender: genderParam });
+    
+    // Si hay tipo de personalización en la URL, restaurarlo
+    if (typeParam) {
+      // Actualizar selector de tipo de personalización
+      if (this.$customizationTypeSelect) {
+        this.$customizationTypeSelect.value = typeParam;
+        this._set(typeParam, true); // Usar limpieza suave al restaurar desde URL
+      }
+      
+      // Actualizar opciones de personalización visual y hacer visibles los selectores correspondientes
+      const typeOption = document.querySelector(`.customization-option[data-value="${typeParam}"]`);
+      if (typeOption && window.selectCustomizationType) {
+        window.selectCustomizationType(typeOption);
+      }
+      
+      // Si hay parámetro de género, restaurarlo
+      if (genderParam && window.selectGender) {
+        setTimeout(() => {
+          const genderOption = document.querySelector(`.gender-option[data-value="${genderParam}"]`);
+          if (genderOption) {
+            window.selectGender(genderOption);
+          }
+        }, 100);
+      }
+      
+      // Si es tipo player y hay parámetro de jugador, restaurar jugador
+      if (typeParam === 'player' && playerParam) {
+        setTimeout(() => {
+          this._loadPlayerFromSearchParams();
+        }, 200);
+      }
+    }
+  }
+  
   _loadPlayerFromSearchParams() {
-    const playerParam = this.searchParams.getPlayer(),
-      player = this.player.players.find(player2 => player2.handle === playerParam);
+    const playerParam = this.searchParams.getPlayer();
+    const genderParam = this.searchParams.getGender();
+    
+    console.log('🔍 _loadPlayerFromSearchParams debug:', {
+      playerParam,
+      genderParam,
+      currentUrl: window.location.href,
+      searchParamsString: window.location.search,
+      directUrlCheck: new URLSearchParams(window.location.search).get('player')
+    });
+    
+    const player = this.player.players.find(player2 => player2.handle === playerParam);
+    
     if (player) {
-      console.log('🔄 Restaurando jugador desde URL:', player.handle, player.name, player.number);
+      console.log('🔄 Restaurando jugador desde URL:', player.handle, player.name, player.number, 'género:', genderParam);
       this._selectVariant("player");
       
-      // Asegurar que la URL se mantenga actualizada
-      this.searchParams.setPlayer(player.handle);
+      // Si hay género en la URL, usarlo directamente
+      if (genderParam && window.selectGender) {
+        const genderOption = document.querySelector(`.gender-option[data-value="${genderParam}"]`);
+        if (genderOption) {
+          window.selectGender(genderOption);
+          console.log('🎯 Género restaurado desde URL:', genderParam);
+        }
+      }
       
-      this.$customizationTypeSelect.selectedIndex = 1;
       this.sponsor.visible(true);
       this.player.selectPlayer(player.handle);
       this.form.set(player.name, player.number);
@@ -1039,5 +1292,5 @@ window.selectCustomizationType = function(element) {
   }
 };
 
-new ProductCustomization;
+window.ProductCustomization = new ProductCustomization;
 //# sourceMappingURL=/cdn/shop/t/3/assets/product-customization.js.map?v=91396716620035587441743439672

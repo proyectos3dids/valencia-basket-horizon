@@ -205,7 +205,7 @@
               "name": "Personalizador de Camisetas",
               "settings": {
                 "show_advanced_controls": true,
-                "name_size": 37,
+                "name_size": 26,
                 "name_height_base": 1,
                 "name_fine_tune": 5,
                 "name_curve": 0,
@@ -216,6 +216,7 @@
                 "horizontal_position": 0.5,
                 "enable_player_option": true,
                 "enable_custom_option": true,
+                "enable_team_patch_selection": true,
                 "players_metaobject_definition": "custom_jugadores",
                 "max_name_length": 15,
                 "max_number_digits": 2
