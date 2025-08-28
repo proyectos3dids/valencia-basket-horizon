@@ -109,47 +109,131 @@ async function initializeCanvas(renderFn) {
 }
 class SearchParamsHandler {
   constructor() {}
+  
   getPlayer() {
     return new URLSearchParams(window.location.search).get("player")
   }
-  setPlayer(handle) {
-    const params = new URLSearchParams(window.location.search);
-    params.set("player", handle), window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+  
+  getCustomizationType() {
+    return new URLSearchParams(window.location.search).get("type")
   }
+  
+  getGender() {
+    return new URLSearchParams(window.location.search).get("gender")
+  }
+  
+  setPlayer(handle) {
+    console.log('🔧 SearchParamsHandler.setPlayer called with:', handle);
+    const params = new URLSearchParams(window.location.search);
+    console.log('📋 Current URL params before:', params.toString());
+    params.set("player", handle);
+    params.set("type", "player");
+    console.log('📋 New URL params after:', params.toString());
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    console.log('🌐 Setting new URL:', newUrl);
+    window.history.replaceState({}, "", newUrl);
+    console.log('✅ URL updated to:', window.location.href);
+  }
+  
+  setGender(gender) {
+    const params = new URLSearchParams(window.location.search);
+    if (gender) {
+      params.set("gender", gender);
+    } else {
+      params.delete("gender");
+    }
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+  }
+  
+  setCustomizationType(type) {
+    const params = new URLSearchParams(window.location.search);
+    if (type && type !== 'none') {
+      params.set("type", type);
+    } else {
+      params.delete("type");
+    }
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+  }
+  
   clearPlayer() {
     const params = new URLSearchParams(window.location.search);
-    params.delete("player"), window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+    params.delete("player");
+    params.delete("type");
+    params.delete("gender");
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+  }
+  
+  clearAll() {
+    const params = new URLSearchParams(window.location.search);
+    params.delete("player");
+    params.delete("type");
+    params.delete("gender");
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
   }
 }
 class ProductCustomizationPlayer {
   constructor() {
-    this.$playerWrapper = document.querySelector("#customization_player_wrapper"), this.$playerSelectInput = document.querySelector("#customization_player"), this.players = Array.from(this.$playerSelectInput?.options || []).filter(option => option.value).map(option => ({
+    this.$playerWrapper = document.querySelector("#customization_player_wrapper"), this.$playerSelectInput = document.querySelector("#customization_player"), this.players = this.$playerSelectInput ? Array.from(this.$playerSelectInput.querySelectorAll('option')).filter(option => option.value).map(option => ({
       name: option.getAttribute("data-name"),
       number: option.getAttribute("data-number"),
       handle: option.value
-    })), this._validate() && this._init()
+    })) : [], this._validate() && this._init()
   }
   _validate() {
     return this.$playerWrapper && this.$playerSelectInput
   }
   _sortPlayers() {
-    const options = this.$playerSelectInput.querySelectorAll("option"),
-      optionsArray = Array.from(options);
-    optionsArray.sort((a, b) => {
-      if (!a.value) return -1;
-      if (!b.value) return 1;
-      const numberA = parseInt(a.getAttribute("data-number"), 10),
-        numberB = parseInt(b.getAttribute("data-number"), 10);
-      return numberA - numberB
-    }), optionsArray.forEach(option => {
-      this.$playerSelectInput.appendChild(option)
-    })
+    // Verificar si es un producto unisex (tiene optgroups)
+    const optgroups = this.$playerSelectInput.querySelectorAll("optgroup");
+    
+    if (optgroups.length > 0) {
+      // Para productos unisex, ordenar dentro de cada optgroup
+      optgroups.forEach(optgroup => {
+        const options = Array.from(optgroup.querySelectorAll("option"));
+        options.sort((a, b) => {
+          if (!a.value) return -1;
+          if (!b.value) return 1;
+          const numberA = parseInt(a.getAttribute("data-number"), 10),
+            numberB = parseInt(b.getAttribute("data-number"), 10);
+          return numberA - numberB;
+        });
+        // Limpiar optgroup y volver a añadir opciones ordenadas
+        optgroup.innerHTML = '';
+        options.forEach(option => {
+          optgroup.appendChild(option);
+        });
+      });
+    } else {
+      // Para productos normales, preservar la opción por defecto y ordenar el resto
+      const defaultOption = this.$playerSelectInput.querySelector('option[value=""]');
+      const playerOptions = Array.from(this.$playerSelectInput.querySelectorAll('option[value]:not([value=""])'));
+      
+      playerOptions.sort((a, b) => {
+        const numberA = parseInt(a.getAttribute("data-number"), 10),
+          numberB = parseInt(b.getAttribute("data-number"), 10);
+        return numberA - numberB;
+      });
+      
+      // Limpiar select y reconstruir
+      this.$playerSelectInput.innerHTML = '';
+      if (defaultOption) {
+        this.$playerSelectInput.appendChild(defaultOption);
+      }
+      playerOptions.forEach(option => {
+        this.$playerSelectInput.appendChild(option);
+      });
+    }
   }
   _init() {
     this.$playerSelectInput.addEventListener("change", this._handlePlayerChange.bind(this)), this._sortPlayers()
   }
   _handlePlayerChange(ev) {
     const player = this.players.find(player2 => player2.handle === ev.target.value);
+    console.log('🎯 ProductCustomizationPlayer._handlePlayerChange:', {
+      selectedValue: ev.target.value,
+      foundPlayer: player,
+      allPlayers: this.players
+    });
     this._emitCustomEvent({
       name: player?.name,
       number: player?.number,
@@ -174,8 +258,39 @@ class ProductCustomizationPlayer {
   }
   selectPlayer(handle) {
     this.visible(!0);
-    const index = this.players.findIndex(player => player.handle === handle) || 0;
-    this.$playerSelectInput.selectedIndex = index + 1
+    
+    // Buscar la opción directamente en el DOM por su valor
+    const targetOption = this.$playerSelectInput.querySelector(`option[value="${handle}"]`);
+    
+    if (targetOption) {
+      // Para productos unisex, asegurar que el optgroup correcto esté visible
+      const optgroup = targetOption.closest('optgroup');
+      if (optgroup) {
+        const isUnisexProduct = this.$playerSelectInput.querySelectorAll('optgroup').length > 0;
+        if (isUnisexProduct) {
+          const genderValue = optgroup.label.toLowerCase().includes('femenino') ? 'female' : 'male';
+          
+          // Activar el género correcto usando la función global
+          const genderOption = document.querySelector(`.gender-option[data-value="${genderValue}"]`);
+          if (genderOption && window.selectGender) {
+            window.selectGender(genderOption);
+          }
+        }
+      }
+      
+      // Obtener todas las opciones del select (incluyendo las de optgroups)
+      const allOptions = Array.from(this.$playerSelectInput.querySelectorAll('option'));
+      const realIndex = allOptions.indexOf(targetOption);
+      
+      this.$playerSelectInput.selectedIndex = realIndex;
+      
+      // Disparar evento change para sincronizar el nombre del jugador
+      const changeEvent = new Event('change', { bubbles: true });
+      this.$playerSelectInput.dispatchEvent(changeEvent);
+    } else {
+      // Si no se encuentra el jugador, mantener el placeholder (selectedIndex = 0)
+      this.$playerSelectInput.selectedIndex = 0;
+    }
   }
 }
 class ProductCustomizationUser {
@@ -462,23 +577,322 @@ class RenderHandler {
       for (const canvas of this.$canvas) canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height)
   }
 }
+// Clase para manejar la deshabilitación del botón de añadir al carrito
+class AddToCartButtonHandler {
+  constructor() {
+    this.addToCartButton = null;
+    this.addToCartComponent = null;
+    this.isCustomizationActive = false;
+    this._init();
+  }
+
+  _init() {
+    // Intentar encontrar el botón inmediatamente
+    this._findButton();
+    
+    // Si no se encuentra, intentar de nuevo después de un breve delay
+    if (!this.addToCartButton) {
+      setTimeout(() => {
+        this._findButton();
+      }, 100);
+    }
+    
+    // También intentar cuando el DOM esté completamente cargado
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        this._findButton();
+      });
+    }
+  }
+  
+  _findButton() {
+    // Buscar el botón de añadir al carrito
+    this.addToCartComponent = document.querySelector('add-to-cart-component');
+    if (this.addToCartComponent && this.addToCartComponent.refs) {
+      this.addToCartButton = this.addToCartComponent.refs.addToCartButton;
+    }
+    
+    // Si no se encuentra con refs, buscar directamente
+    if (!this.addToCartButton) {
+      this.addToCartButton = document.querySelector('[ref="addToCartButton"]');
+    }
+    
+    // Buscar por ID también
+    if (!this.addToCartButton) {
+      this.addToCartButton = document.querySelector('[id*="BuyButtons-ProductSubmitButton"]');
+    }
+    
+    // Buscar el botón de compra rápida (accelerated checkout)
+    this.quickBuyContainer = document.querySelector('.accelerated-checkout-block');
+    this.quickBuyButton = document.querySelector('.shopify-payment-button__button');
+    
+    console.log('🛒 AddToCartButtonHandler search result:', {
+      component: !!this.addToCartComponent,
+      button: !!this.addToCartButton,
+      buttonId: this.addToCartButton?.id || 'no-id',
+      quickBuyContainer: !!this.quickBuyContainer,
+      quickBuyButton: !!this.quickBuyButton
+    });
+  }
+
+  disableButton() {
+    if (this.addToCartButton && !this.addToCartButton.disabled) {
+      console.log('🛒 Disabling add to cart button due to customization');
+      this.addToCartButton.disabled = true;
+      this.addToCartButton.style.opacity = '0.6';
+      this.addToCartButton.style.cursor = 'not-allowed';
+      
+      // También usar el método del componente si está disponible
+      if (this.addToCartComponent && typeof this.addToCartComponent.disable === 'function') {
+        this.addToCartComponent.disable();
+      }
+    }
+    
+    // Ocultar botón de compra rápida
+    this._hideQuickBuy();
+  }
+
+  enableButton() {
+    if (this.addToCartButton && this.addToCartButton.disabled) {
+      console.log('🛒 Enabling add to cart button - no customization active');
+      this.addToCartButton.disabled = false;
+      this.addToCartButton.style.opacity = '';
+      this.addToCartButton.style.cursor = '';
+      
+      // También usar el método del componente si está disponible
+      if (this.addToCartComponent && typeof this.addToCartComponent.enable === 'function') {
+        this.addToCartComponent.enable();
+      }
+    }
+    
+    // Remover el manejador personalizado si existe
+    this._removeCustomClickHandler();
+  }
+  
+  enableButtonWithCustomBehavior() {
+    if (this.addToCartButton) {
+      console.log('🛒 Enabling add to cart button with custom behavior for customization');
+      this.addToCartButton.disabled = false;
+      this.addToCartButton.style.opacity = '';
+      this.addToCartButton.style.cursor = '';
+      
+      // También usar el método del componente si está disponible
+      if (this.addToCartComponent && typeof this.addToCartComponent.enable === 'function') {
+        this.addToCartComponent.enable();
+      }
+      
+      // Adjuntar el manejador personalizado
+      this._attachCustomClickHandler();
+    }
+  }
+  
+  _attachCustomClickHandler() {
+    if (this.addToCartButton && !this.customClickHandlerAttached) {
+      this.customClickHandler = this._handleCustomAddToCart.bind(this);
+      this.addToCartButton.addEventListener('click', this.customClickHandler, true);
+      this.customClickHandlerAttached = true;
+      console.log('🛒 Custom click handler attached');
+    }
+  }
+  
+  _removeCustomClickHandler() {
+    if (this.addToCartButton && this.customClickHandlerAttached) {
+      this.addToCartButton.removeEventListener('click', this.customClickHandler, true);
+      this.customClickHandlerAttached = false;
+      console.log('🛒 Custom click handler removed');
+    }
+  }
+  
+  _handleCustomAddToCart(event) {
+    if (this.isCustomizationActive) {
+      console.log('🛒 Intercepting add to cart click - using custom AJAX');
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      
+      // Usar la función AJAX personalizada
+      this.addToCartWithCustomization();
+    }
+  }
+
+  setCustomizationActive(isActive) {
+    this.isCustomizationActive = isActive;
+    if (isActive) {
+      this.enableButtonWithCustomBehavior();
+      this._hideQuickBuy();
+    } else {
+      this.enableButton();
+      this._showQuickBuy();
+    }
+  }
+
+  _hideQuickBuy() {
+    if (this.quickBuyContainer) {
+      console.log('🛒 Hiding quick buy button due to customization');
+      this.quickBuyContainer.style.display = 'none';
+    }
+  }
+
+  _showQuickBuy() {
+     if (this.quickBuyContainer) {
+       console.log('🛒 Showing quick buy button - no customization active');
+       this.quickBuyContainer.style.display = '';
+     }
+   }
+
+   // Ajax Cart API function to add base product + customization addon
+   async addToCartWithCustomization() {
+     try {
+       // Get base variant ID from the form
+       const baseVariantId = document.querySelector('input[name="id"]').value;
+       
+       // Get product title and variant title for reference
+       const productTitleElement = document.querySelector('h1');
+       const productTitle = productTitleElement ? productTitleElement.textContent.trim() : '';
+       
+       // Get variant title from the selected variant (if available)
+       const variantTitleElement = document.querySelector('variant-picker script[type="application/json"]');
+       let variantTitle = '';
+       if (variantTitleElement) {
+         try {
+           const variantData = JSON.parse(variantTitleElement.textContent);
+           variantTitle = variantData.title || '';
+         } catch (e) {
+           console.warn('Could not parse variant data:', e);
+         }
+       }
+       
+       // Get customization properties from hidden form fields
+       const playerNameField = document.querySelector('#product_form_player_name');
+       const playerNumberField = document.querySelector('#product_form_player_number');
+       const customizationOptionsField = document.querySelector('#product_form_customization_options');
+       const modeloField = document.querySelector('#product_form_modelo');
+       const teamPatchField = document.querySelector('#product_form_team_patch');
+       
+       // Build properties object only if they have values
+       const properties = {};
+       if (playerNameField && playerNameField.value) {
+         properties['Nombre'] = playerNameField.value;
+       }
+       if (playerNumberField && playerNumberField.value) {
+         properties['Dorsal'] = playerNumberField.value;
+       }
+       if (modeloField && modeloField.value) {
+         properties['Modelo'] = modeloField.value;
+       }
+       if (teamPatchField && teamPatchField.value) {
+         properties['Parche de equipo'] = teamPatchField.value;
+       }
+       
+       // Add product and variant titles as reference properties in combined format
+       if (productTitle && variantTitle) {
+         properties['Producto'] = `${productTitle} / ${variantTitle}`;
+       } else if (productTitle) {
+         properties['Producto'] = productTitle;
+       }
+       
+       // Fixed addon variant ID for customization
+       const addonVariantId = 55907473817983;
+       
+       console.log('🛒 Adding to cart with customization:', {
+         baseVariantId,
+         addonVariantId,
+         properties
+       });
+       
+       const items = [
+         { 
+           id: baseVariantId, 
+           quantity: 1
+         },
+         { 
+           id: addonVariantId, 
+           quantity: 1, 
+           parent_id: baseVariantId,
+           properties: Object.keys(properties).length > 0 ? properties : undefined
+         }
+       ];
+       
+       // Clean up undefined properties
+       items.forEach(item => {
+         if (item.properties === undefined) {
+           delete item.properties;
+         }
+       });
+       
+       const response = await fetch('/cart/add.js', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ items })
+       });
+       
+       if (!response.ok) {
+         throw new Error(`HTTP error! status: ${response.status}`);
+       }
+       
+       const result = await response.json();
+       console.log('🛒 Cart add successful:', result);
+       
+       // Disparar evento de actualización del carrito para actualizar en segundo plano
+       const cartResponse = await fetch('/cart.js');
+       const cartData = await cartResponse.json();
+       
+       // Importar el evento necesario
+       const { CartUpdateEvent } = await import('@theme/events');
+       
+       // Disparar evento para actualizar el carrito en segundo plano
+       document.dispatchEvent(new CartUpdateEvent(cartData, 'product-customization', {
+         itemCount: cartData.item_count,
+         source: 'product-customization',
+         didError: false
+       }));
+       
+       console.log('🛒 Cart update event dispatched');
+       return result;
+       
+     } catch (error) {
+       console.error('🛒 Error adding to cart with customization:', error);
+       throw error;
+     }
+   }
+ }
+
 class ProductCustomization {
   constructor() {
     this.$customizationTypeSelect = document.querySelector("#customization_type"), this.variants = {
       none: document.querySelector('.variant-wrapper input[name="_customization"][value="none"]'),
       player: document.querySelector('.variant-wrapper input[name="_customization"][value="player"]'),
       user: document.querySelector('.variant-wrapper input[name="_customization"][value="user"]')
-    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this._validate() && this._init()
+    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this.addToCartHandler = new AddToCartButtonHandler, this._validate() && this._init()
   }
   _validate() {
     return !!this.$customizationTypeSelect
   }
   _init() {
-    this.$customizationTypeSelect.addEventListener("change", this._handleCustomizationTypeChange.bind(this)), window.addEventListener(CUSTOMIZATION_PLAYER_CHANGE_EVENT, this._handlePlayerChange.bind(this)), window.addEventListener(CUSTOMIZATION_USER_CHANGE_EVENT, this._handleUserChange.bind(this)), document.addEventListener('customization-settings-changed', this._handleSettingsChange.bind(this)), this._loadPlayerFromSearchParams(), this.form.setSponsor(this.selectedSponsor)
+    this.$customizationTypeSelect.addEventListener("change", this._handleCustomizationTypeChange.bind(this)), window.addEventListener(CUSTOMIZATION_PLAYER_CHANGE_EVENT, this._handlePlayerChange.bind(this)), window.addEventListener(CUSTOMIZATION_USER_CHANGE_EVENT, this._handleUserChange.bind(this)), document.addEventListener('customization-settings-changed', this._handleSettingsChange.bind(this)), document.addEventListener('variant:update', this._handleVariantUpdate.bind(this)), this._loadFromSearchParams(), this.form.setSponsor(this.selectedSponsor)
   }
   _handleCustomizationTypeChange(ev) {
     const type = ev.target.value;
-    this._set(type);
+    
+    // Verificar si este cambio es parte de la restauración desde URL
+    const currentUrl = new URL(window.location);
+    const urlType = currentUrl.searchParams.get('type');
+    const isRestoringFromUrl = urlType === type;
+    
+    console.log('🔄 _handleCustomizationTypeChange:', { type, urlType, isRestoringFromUrl });
+    
+    // Solo hacer limpieza suave si estamos restaurando desde URL
+    this._set(type, isRestoringFromUrl);
+    
+    // Solo actualizar parámetros de URL si no estamos restaurando
+    if (!isRestoringFromUrl) {
+      this.searchParams.setCustomizationType(type);
+    }
+    
+    // Manejar el estado del botón de añadir al carrito
+    const hasCustomization = type !== 'none';
+    this.addToCartHandler.setCustomizationActive(hasCustomization);
+    
     // Actualizar campo oculto para las opciones de personalización
     const optionsField = document.querySelector('#product_form_customization_options');
     if (optionsField) {
@@ -500,11 +914,21 @@ class ProductCustomization {
       optionsField.value = mappedOption;
     }
   }
-  _set(type) {
-    this._clear(type !== void 0), this.player.visible(type === "player"), this.user.visible(type === "user"), /* this.sponsor.visible(type === "player" || type === "user") - Patrocinadores deshabilitados */ type === "player" ? this._selectVariant("") : this._selectVariant(type)
+  _set(type, soft = false) {
+    this._clear(soft || type !== void 0), this.player.visible(type === "player"), this.user.visible(type === "user"), /* this.sponsor.visible(type === "player" || type === "user") - Patrocinadores deshabilitados */ type === "player" ? this._selectVariant("") : this._selectVariant(type)
   }
   _clear(soft = !1) {
-    this.form.clear(), this.render.clear(), this.searchParams.clearPlayer(), soft || (this._selectVariant("none"), this.player.visible(!1), this.user.visible(!1))
+    this.form.clear(), this.render.clear();
+    
+    // Solo limpiar parámetros de URL si no es una limpieza suave
+    if (!soft) {
+      this.searchParams.clearAll();
+    }
+    
+    // Habilitar botón de añadir al carrito cuando se limpia la personalización
+    this.addToCartHandler.setCustomizationActive(false);
+    
+    soft || (this._selectVariant("none"), this.player.visible(!1), this.user.visible(!1))
   }
   _selectVariant(type) {
     const typeMap = {
@@ -519,22 +943,51 @@ class ProductCustomization {
   }
   _handlePlayerChange(ev) {
     const detail = ev.detail;
+    console.log('🔥 ProductCustomization._handlePlayerChange received:', detail);
     if (detail.name && detail.number && detail.handle) {
+      console.log('✅ Valid player data, setting URL params');
       this._selectVariant("player");
       this.form.set(detail.name, detail.number);
       this.searchParams.setPlayer(detail.handle);
+      this.searchParams.setCustomizationType('player');
+      console.log('🌐 URL after setPlayer:', window.location.href);
+      
+      // Para productos unisex, detectar y guardar el género
+      const playerSelect = document.querySelector('#customization_player');
+      if (playerSelect) {
+        const selectedOption = playerSelect.querySelector(`option[value="${detail.handle}"]`);
+        if (selectedOption) {
+          const optgroup = selectedOption.closest('optgroup');
+          if (optgroup) {
+            const genderValue = optgroup.label.toLowerCase().includes('femenino') ? 'female' : 'male';
+            this.searchParams.setGender(genderValue);
+          }
+        }
+      }
+      
+      // Deshabilitar botón de añadir al carrito cuando hay personalización de jugador
+      this.addToCartHandler.setCustomizationActive(true);
+      
       // Actualizar campo oculto para las opciones de personalización
       const optionsField = document.querySelector('#product_form_customization_options');
       if (optionsField) {
         optionsField.value = 'Jugador';
       }
-      this._navigateToSecondImage();
+      
+      // Solo navegar a la segunda imagen si hay personalización activa
+      if (detail.name || detail.number) {
+        this._navigateToSecondImage();
+      }
       this.render.draw(detail.name, detail.number, this.selectedSponsor);
     } else {
       this._selectVariant("");
       this.form.clear();
-      this.searchParams.clearPlayer();
+      this.searchParams.clearAll();
       this.render.clear();
+      
+      // Habilitar botón de añadir al carrito cuando no hay personalización
+      this.addToCartHandler.setCustomizationActive(false);
+      
       // Limpiar campo oculto para las opciones de personalización
       const optionsField = document.querySelector('#product_form_customization_options');
       if (optionsField) {
@@ -545,12 +998,29 @@ class ProductCustomization {
   _handleUserChange(ev) {
     const detail = ev.detail;
     detail.name ? this.form.setName(detail.name) : this.form.clearName(), detail.number ? this.form.setNumber(detail.number) : this.form.clearNumber();
+    
+    // Verificar si hay alguna personalización activa (nombre o número)
+    const hasCustomization = (detail.name && detail.name.trim() !== '') || (detail.number && detail.number.trim() !== '');
+    this.addToCartHandler.setCustomizationActive(hasCustomization);
+    
+    // Actualizar parámetros de URL
+    if (hasCustomization) {
+      this.searchParams.setCustomizationType('user');
+    } else {
+      this.searchParams.clearAll();
+    }
+    
     // Actualizar campo oculto para las opciones de personalización
     const optionsField = document.querySelector('#product_form_customization_options');
     if (optionsField) {
-      optionsField.value = 'Personalizado';
+      optionsField.value = hasCustomization ? 'Personalizado' : 'Sin personalización';
     }
-    this._navigateToSecondImage(), this.render.draw(detail.name, detail.number, this.selectedSponsor)
+    
+    // Solo navegar a la segunda imagen si hay personalización activa
+    if (hasCustomization) {
+      this._navigateToSecondImage();
+    }
+    this.render.draw(detail.name, detail.number, this.selectedSponsor)
   }
   _handleSettingsChange(ev) {
 
@@ -572,14 +1042,225 @@ class ProductCustomization {
       }
     }
   }
+  _handleVariantUpdate(event) {
+    // Preservar el estado de personalización cuando cambie la variante
+    const currentType = this.$customizationTypeSelect?.value;
+    const currentUrl = new URL(window.location);
+    const currentPlayerParam = currentUrl.searchParams.get('player');
+    
+    console.log('🔄 Variant update detected:', {
+      currentType,
+      currentPlayerParam,
+      url: window.location.href
+    });
+    
+    // Esperar un poco para que el DOM se actualice después del morph
+    setTimeout(() => {
+      // Re-obtener referencias después del morph
+      this.$customizationTypeSelect = document.querySelector("#customization_type");
+      this.variants = {
+        none: document.querySelector('.variant-wrapper input[name="_customization"][value="none"]'),
+        player: document.querySelector('.variant-wrapper input[name="_customization"][value="player"]'),
+        user: document.querySelector('.variant-wrapper input[name="_customization"][value="user"]')
+      };
+      
+      // Reinicializar componentes con las nuevas referencias del DOM
+      this.render = new RenderHandler();
+      this.form = new ProductFormHandler();
+      
+      // Restaurar el tipo de personalización seleccionado
+      if (currentType && this.$customizationTypeSelect) {
+        this.$customizationTypeSelect.value = currentType;
+        this._set(currentType, true); // Usar limpieza suave para preservar parámetros URL
+        
+        // Restaurar el estado del botón de añadir al carrito
+        const hasCustomization = currentType !== 'none';
+        this.addToCartHandler.setCustomizationActive(hasCustomization);
+        
+        // Restaurar el campo de opciones
+        const optionsField = document.querySelector('#product_form_customization_options');
+        if (optionsField) {
+          let mappedOption;
+          switch(currentType) {
+            case 'none':
+              mappedOption = 'Sin personalización';
+              break;
+            case 'player':
+              mappedOption = 'Jugador';
+              break;
+            case 'user':
+              mappedOption = 'Personalizado';
+              break;
+            default:
+              mappedOption = currentType;
+          }
+          optionsField.value = mappedOption;
+        }
+        
+        // Verificar si hay parámetros de URL que necesitan ser restaurados
+        const currentUrl = new URL(window.location);
+        const playerParam = currentUrl.searchParams.get('player');
+        
+        console.log('🔍 Checking URL params after DOM update:', {
+          currentType,
+          playerParam,
+          url: window.location.href
+        });
+        
+        // Si había un jugador seleccionado, restaurarlo desde la URL
+        if (currentType === 'player' && playerParam) {
+          console.log('✅ Restoring player state from URL');
+          // Restaurar completamente el estado del jugador desde la URL
+          this._loadPlayerFromSearchParams();
+        } else if (currentType === 'player') {
+          console.log('🔍 Player type but no URL param - checking if player exists in DOM');
+          // Verificar si hay un jugador seleccionado en el DOM antes de limpiar
+          const selectedPlayerOption = document.querySelector('#customization_player option:checked');
+          const hasSelectedPlayer = selectedPlayerOption && selectedPlayerOption.value && selectedPlayerOption.value !== '';
+          
+          if (!hasSelectedPlayer) {
+            console.log('🧹 No player selected, clearing params');
+            this.searchParams.clearAll();
+          } else {
+            console.log('🎯 Player found in DOM, preserving state');
+          }
+          
+          // Actualizar opciones de personalización visual
+          const customizationOptions = document.querySelectorAll('.customization-option');
+          customizationOptions.forEach(option => {
+            option.classList.remove('active');
+            if (option.dataset.value === 'player') {
+              option.classList.add('active');
+            }
+          });
+        } else if (currentType === 'user') {
+          console.log('👤 Restoring user customization');
+          // Restaurar personalización de usuario si había datos
+          const nameInput = document.querySelector('#customization_user_name');
+          const numberInput = document.querySelector('#customization_user_number');
+          const name = nameInput?.value || '';
+          const number = numberInput?.value || '';
+          if (name || number) {
+            this._navigateToSecondImage();
+            this.render.draw(name, number, this.selectedSponsor);
+          }
+          // Limpiar parámetro de jugador si estamos en modo usuario
+          this.searchParams.clearAll();
+          
+          // Actualizar opciones de personalización visual
+          const customizationOptions = document.querySelectorAll('.customization-option');
+          customizationOptions.forEach(option => {
+            option.classList.remove('active');
+            if (option.dataset.value === 'user') {
+              option.classList.add('active');
+            }
+          });
+        } else {
+          console.log('🧹 No customization, clearing all params');
+          // Si no hay personalización, limpiar parámetros
+          this.searchParams.clearAll();
+          
+          // Actualizar opciones de personalización visual
+          const customizationOptions = document.querySelectorAll('.customization-option');
+          customizationOptions.forEach(option => {
+            option.classList.remove('active');
+            if (option.dataset.value === 'none') {
+              option.classList.add('active');
+            }
+          });
+        }
+      }
+    }, 100);
+  }
   // _handleSponsorChange(ev) {
   //   const sponsor = ev.detail;
   //   this.selectedSponsor = sponsor, this.form.setSponsor(sponsor), this.render.navigateToImage(sponsor)
   // }
+  _loadFromSearchParams() {
+    const typeParam = this.searchParams.getCustomizationType();
+    const playerParam = this.searchParams.getPlayer();
+    const genderParam = this.searchParams.getGender();
+    
+    console.log('🔄 Cargando estado desde URL:', { type: typeParam, player: playerParam, gender: genderParam });
+    
+    // Si hay tipo de personalización en la URL, restaurarlo
+    if (typeParam) {
+      // Actualizar selector de tipo de personalización
+      if (this.$customizationTypeSelect) {
+        this.$customizationTypeSelect.value = typeParam;
+        this._set(typeParam, true); // Usar limpieza suave al restaurar desde URL
+      }
+      
+      // Actualizar opciones de personalización visual y hacer visibles los selectores correspondientes
+      const typeOption = document.querySelector(`.customization-option[data-value="${typeParam}"]`);
+      if (typeOption && window.selectCustomizationType) {
+        window.selectCustomizationType(typeOption);
+      }
+      
+      // Si hay parámetro de género, restaurarlo
+      if (genderParam && window.selectGender) {
+        setTimeout(() => {
+          const genderOption = document.querySelector(`.gender-option[data-value="${genderParam}"]`);
+          if (genderOption) {
+            window.selectGender(genderOption);
+          }
+        }, 100);
+      }
+      
+      // Si es tipo player y hay parámetro de jugador, restaurar jugador
+      if (typeParam === 'player' && playerParam) {
+        setTimeout(() => {
+          this._loadPlayerFromSearchParams();
+        }, 200);
+      }
+    }
+  }
+  
   _loadPlayerFromSearchParams() {
-    const playerParam = this.searchParams.getPlayer(),
-      player = this.player.players.find(player2 => player2.handle === playerParam);
-    player ? (this._selectVariant("player"), this.searchParams.setPlayer(player.handle), this.$customizationTypeSelect.selectedIndex = 1, this.sponsor.visible(!0), this.player.selectPlayer(player.handle), this.form.set(player.name, player.number), this._navigateToSecondImage(), this.render.draw(player.name, player.number, this.selectedSponsor)) : (this.$customizationTypeSelect.selectedIndex = 0, this._selectVariant(""))
+    const playerParam = this.searchParams.getPlayer();
+    const genderParam = this.searchParams.getGender();
+    
+    console.log('🔍 _loadPlayerFromSearchParams debug:', {
+      playerParam,
+      genderParam,
+      currentUrl: window.location.href,
+      searchParamsString: window.location.search,
+      directUrlCheck: new URLSearchParams(window.location.search).get('player')
+    });
+    
+    const player = this.player.players.find(player2 => player2.handle === playerParam);
+    
+    if (player) {
+      console.log('🔄 Restaurando jugador desde URL:', player.handle, player.name, player.number, 'género:', genderParam);
+      this._selectVariant("player");
+      
+      // Si hay género en la URL, usarlo directamente
+      if (genderParam && window.selectGender) {
+        const genderOption = document.querySelector(`.gender-option[data-value="${genderParam}"]`);
+        if (genderOption) {
+          window.selectGender(genderOption);
+          console.log('🎯 Género restaurado desde URL:', genderParam);
+        }
+      }
+      
+      this.sponsor.visible(true);
+      this.player.selectPlayer(player.handle);
+      this.form.set(player.name, player.number);
+      
+      // Solo navegar a la segunda imagen si el jugador tiene nombre o número
+      if (player.name || player.number) {
+        this._navigateToSecondImage();
+        console.log('🖼️ Navegando a segunda imagen para jugador:', player.name);
+      }
+      
+      // Forzar regeneración del canvas
+      console.log('🎨 Regenerando canvas para jugador:', player.name, player.number);
+      this.render.draw(player.name, player.number, this.selectedSponsor);
+    } else {
+      console.log('❌ Jugador no encontrado para parámetro:', playerParam);
+      this.$customizationTypeSelect.selectedIndex = 0;
+      this._selectVariant("");
+    }
   }
 
   _navigateToSecondImage() {
@@ -611,5 +1292,5 @@ window.selectCustomizationType = function(element) {
   }
 };
 
-new ProductCustomization;
+window.ProductCustomization = new ProductCustomization;
 //# sourceMappingURL=/cdn/shop/t/3/assets/product-customization.js.map?v=91396716620035587441743439672

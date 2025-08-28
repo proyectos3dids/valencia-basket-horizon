@@ -169,6 +169,15 @@ class ProductFormComponent extends Component {
 
     const formData = new FormData(form);
 
+    // Debug: Log all form data being sent to cart
+    if (window.personalizadorDebugMode) {
+      console.log('=== FormData being sent to cart ===');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+      console.log('=== End FormData ===');
+    }
+
     const cartItemsComponents = document.querySelectorAll('cart-items-component');
     let cartItemComponentsSectionIds = [];
     cartItemsComponents.forEach((item) => {

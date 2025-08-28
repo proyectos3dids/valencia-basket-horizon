@@ -4,8 +4,196 @@
 
 <script>
   // Establecer variable global para el estado de los controles avanzados
-  window.personalizadorDebugMode = {{ block.settings.show_advanced_controls | json }};
+  window.personalizadorDebugMode = true; // Temporalmente habilitado para diagnosticar
+  window.isUnisexProduct = {{ block.settings.is_unisex_product | json }};
+  
+  // Funcionalidad para productos unisex
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.isUnisexProduct) {
+      const genderOptions = document.querySelectorAll('.gender-option');
+      const playerSelect = document.getElementById('customization_player');
+      const maleOptions = playerSelect.querySelectorAll('.male-players');
+      const femaleOptions = playerSelect.querySelectorAll('.female-players');
+      
+      // Función para seleccionar género
+       window.selectGender = function(element) {
+         const selectedGender = element.dataset.value;
+         const container = document.querySelector('.personalizador-container') || document.body;
+         
+         // Actualizar opciones activas
+         genderOptions.forEach(opt => opt.classList.remove('active'));
+         element.classList.add('active');
+         
+         // Actualizar campo oculto
+         document.getElementById('selected_gender').value = selectedGender;
+         
+         // Actualizar parámetros de URL si existe el SearchParamsHandler
+         if (window.ProductCustomization && window.ProductCustomization.searchParams) {
+           window.ProductCustomization.searchParams.setGender(selectedGender);
+         }
+         
+         // Actualizar clases del contenedor para CSS
+         container.classList.remove('male-selected', 'female-selected');
+         container.classList.add('unisex-product', selectedGender + '-selected');
+         
+         // Obtener los optgroups correctos
+         const maleOptgroup = playerSelect.querySelector('.male-players');
+         const femaleOptgroup = playerSelect.querySelector('.female-players');
+         
+         // Mostrar/ocultar opciones de jugadores
+          if (selectedGender === 'male') {
+            if (maleOptgroup) {
+              maleOptgroup.style.display = 'block';
+              // Habilitar todas las opciones masculinas
+              const maleOptions = maleOptgroup.querySelectorAll('option');
+              maleOptions.forEach(option => option.disabled = false);
+            }
+            if (femaleOptgroup) {
+              femaleOptgroup.style.display = 'none';
+              // Deshabilitar todas las opciones femeninas
+              const femaleOptions = femaleOptgroup.querySelectorAll('option');
+              femaleOptions.forEach(option => option.disabled = true);
+            }
+          } else {
+            if (maleOptgroup) {
+              maleOptgroup.style.display = 'none';
+              // Deshabilitar todas las opciones masculinas
+              const maleOptions = maleOptgroup.querySelectorAll('option');
+              maleOptions.forEach(option => option.disabled = true);
+            }
+            if (femaleOptgroup) {
+              femaleOptgroup.style.display = 'block';
+              // Habilitar todas las opciones femeninas
+              const femaleOptions = femaleOptgroup.querySelectorAll('option');
+              femaleOptions.forEach(option => option.disabled = false);
+            }
+          }
+         
+         // Limpiar selección actual
+         playerSelect.value = '';
+         
+         // Actualizar parche de equipo automáticamente según el género seleccionado
+         setTimeout(() => {
+           const teamPatchOption = document.querySelector(`.team-patch-option[data-value="${selectedGender}"]`);
+           if (teamPatchOption && window.selectTeamPatch) {
+             window.selectTeamPatch(teamPatchOption);
+           }
+         }, 50);
+         
+         // Guardar género en URL si ProductCustomization está disponible
+         if (window.ProductCustomization && window.ProductCustomization.searchParams) {
+           window.ProductCustomization.searchParams.setGender(selectedGender);
+         }
+         
+         if (window.personalizadorDebugMode) {
+           console.log('Género seleccionado:', selectedGender);
+           console.log('Optgroup masculino:', maleOptgroup);
+           console.log('Optgroup femenino:', femaleOptgroup);
+           console.log('Parche actualizado automáticamente:', selectedGender);
+         }
+       };
+       
+       // Inicializar con género masculino por defecto
+       const defaultGender = document.querySelector('.gender-option[data-value="male"]');
+       if (defaultGender) {
+         window.selectGender(defaultGender);
+       }
+    }
+    
+    // Función para seleccionar parche de equipo
+    window.selectTeamPatch = function(element) {
+      const selectedPatch = element.dataset.value;
+      const teamPatchOptions = document.querySelectorAll('.team-patch-option');
+      
+      // Actualizar opciones activas
+      teamPatchOptions.forEach(opt => opt.classList.remove('active'));
+      element.classList.add('active');
+      
+      // Actualizar campo oculto
+      document.getElementById('selected_team_patch').value = selectedPatch;
+      
+      // Actualizar campo del formulario de compra
+      const formField = document.getElementById('product_form_team_patch');
+      if (formField) {
+        const patchText = selectedPatch === 'male' ? 'Parche Masculino' : 'Parche Femenino';
+        formField.value = patchText;
+      }
+      
+      if (window.personalizadorDebugMode) {
+        console.log('Parche de equipo seleccionado:', selectedPatch);
+        console.log('Campo del formulario actualizado:', formField ? formField.value : 'Campo no encontrado');
+      }
+    };
+    
+    // Inicializar valor por defecto del parche al cargar la página
+    const initializeDefaultPatch = function() {
+      const defaultPatch = document.querySelector('.team-patch-option[data-value="male"]');
+      const formField = document.getElementById('product_form_team_patch');
+      
+      if (window.personalizadorDebugMode) {
+        console.log('Inicializando parche por defecto...');
+        console.log('Elemento parche encontrado:', !!defaultPatch);
+        console.log('Campo formulario encontrado:', !!formField);
+      }
+      
+      if (defaultPatch && window.selectTeamPatch) {
+        window.selectTeamPatch(defaultPatch);
+      } else if (formField) {
+        // Fallback: establecer directamente el valor si no se encuentra el elemento
+        formField.value = 'Parche Masculino';
+        const hiddenField = document.getElementById('selected_team_patch');
+        if (hiddenField) {
+          hiddenField.value = 'male';
+        }
+        if (window.personalizadorDebugMode) {
+          console.log('Parche inicializado directamente:', formField.value);
+        }
+      }
+    };
+    
+    // Ejecutar inicialización con un pequeño delay para asegurar que el DOM esté listo
+    const executeInitialization = () => {
+      setTimeout(initializeDefaultPatch, 100);
+    };
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', executeInitialization);
+    } else {
+      executeInitialization();
+    }
+    
+    // Debug: Verificar valores antes del envío del formulario
+    document.addEventListener('submit', function(event) {
+      if (event.target.matches('form[data-type="add-to-cart-form"]')) {
+        const teamPatchField = document.getElementById('product_form_team_patch');
+        const selectedPatchField = document.getElementById('selected_team_patch');
+        
+        if (window.personalizadorDebugMode) {
+          console.log('🛒 ENVÍO DEL FORMULARIO - Valores de parche:');
+          console.log('product_form_team_patch:', teamPatchField ? teamPatchField.value : 'Campo no encontrado');
+          console.log('selected_team_patch:', selectedPatchField ? selectedPatchField.value : 'Campo no encontrado');
+          
+          // Mostrar todos los campos properties del formulario
+          const form = event.target;
+          const propertyInputs = form.querySelectorAll('input[name^="properties["]');
+          console.log('Todos los campos properties:');
+          propertyInputs.forEach(input => {
+            console.log(`${input.name}: "${input.value}"`);
+          });
+        }
+      }
+    });
+  });
 </script>
+
+{% if block.settings.debug_mode %}
+<div class="debug-info" style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px;">
+  <h4>🐛 Debug Info</h4>
+  <p><strong>Producto Unisex:</strong> {{ block.settings.is_unisex_product }}</p>
+  <p><strong>Metaobjeto Masculino:</strong> {{ block.settings.players_metaobject_definition }}</p>
+  <p><strong>Metaobjeto Femenino:</strong> {{ block.settings.female_players_metaobject_definition }}</p>
+</div>
+{% endif %}
 
 <div class="product-customization-settings">
   {%- comment -%}
@@ -21,7 +209,7 @@
       </div>
       {% if block.settings.enable_player_option %}
       <div class="customization-option" data-value="player" onclick="selectCustomizationType(this)">
-        <span class="option-text">Jugador</span>
+        <span class="option-text">{{ block.settings.player_option_text | default: 'Jugador' }}</span>
         <span class="option-price">+15€</span>
       </div>
       {% endif %}
@@ -34,6 +222,38 @@
     </div>
     <input type="hidden" id="customization_type" name="customization_type" value="none">
   </div>
+  
+  {% if block.settings.is_unisex_product %}
+  <!-- Selector de género para productos unisex -->
+  <div class="gender-selection-wrapper" id="gender-selection-wrapper" style="display: none;">
+    <label class="customization-label">Seleccionar equipo:</label>
+    <div class="gender-options">
+      <div class="gender-option active" data-value="male" onclick="selectGender(this)">
+        <span class="option-text">Masculino</span>
+      </div>
+      <div class="gender-option" data-value="female" onclick="selectGender(this)">
+        <span class="option-text">Femenino</span>
+      </div>
+    </div>
+    <input type="hidden" id="selected_gender" name="selected_gender" value="male">
+  </div>
+  {% endif %}
+  
+  {% if block.settings.is_unisex_product and block.settings.enable_team_patch_selection or block.settings.is_unisex_product and block.settings.show_advanced_controls %}
+  <!-- Selector de parche de equipo (solo para productos unisex) -->
+  <div class="team-patch-selection-wrapper" id="team-patch-selection-wrapper" style="display: none;">
+    <label class="customization-label">Seleccionar parche de equipo:</label>
+    <div class="team-patch-options">
+      <div class="team-patch-option active" data-value="male" onclick="selectTeamPatch(this)">
+        <span class="option-text">Parche Masculino</span>
+      </div>
+      <div class="team-patch-option" data-value="female" onclick="selectTeamPatch(this)">
+        <span class="option-text">Parche Femenino</span>
+      </div>
+    </div>
+    <input type="hidden" id="selected_team_patch" name="selected_team_patch" value="male">
+  </div>
+  {% endif %}
   
   <div class="customization-controls" id="customization-controls">
     {% if block.settings.show_advanced_controls %}
@@ -143,39 +363,97 @@
     </div>
   
   <!-- Selector de jugadores (dinámico desde metaobjeto) -->
-   {% assign metaobject_definition = block.settings.players_metaobject_definition | default: 'custom_jugadores' %}
-  {% assign jugadores_metaobject_def = metaobjects[metaobject_definition] %}
-  {% assign jugadores_metaobject_list = jugadores_metaobject_def.values %}
+  {% if block.settings.is_unisex_product %}
+    <!-- Para productos unisex, preparamos ambos metaobjetos -->
+    {% assign male_metaobject_definition = block.settings.players_metaobject_definition | default: 'custom_jugadores' %}
+    {% assign female_metaobject_definition = block.settings.female_players_metaobject_definition | default: 'custom_jugadores_femenino' %}
+    {% assign male_jugadores_metaobject_def = metaobjects[male_metaobject_definition] %}
+    {% assign female_jugadores_metaobject_def = metaobjects[female_metaobject_definition] %}
+    {% assign male_jugadores_metaobject_list = male_jugadores_metaobject_def.values %}
+    {% assign female_jugadores_metaobject_list = female_jugadores_metaobject_def.values %}
+  {% else %}
+    <!-- Para productos normales, usamos solo el metaobjeto masculino -->
+    {% assign metaobject_definition = block.settings.players_metaobject_definition | default: 'custom_jugadores' %}
+    {% assign jugadores_metaobject_def = metaobjects[metaobject_definition] %}
+    {% assign jugadores_metaobject_list = jugadores_metaobject_def.values %}
+  {% endif %}
    
    <div id="customization_player_wrapper" class="customization-player-wrapper" hidden>
      <div class="customization-field">
-       <label for="customization_player">Jugador</label>
+       <label for="customization_player">{{ block.settings.player_option_text | default: 'Jugador' }}</label>
        <div class="customization-select-wrapper">
          <select id="customization_player" name="customization_player" class="customization-select">
-           <option value="">Selecciona un jugador...</option>
-           {% if jugadores_metaobject_def.values_count > 0 %}
-             {% for jugador in jugadores_metaobject_list %}
-               {% assign jugador_nombre = jugador.jugador.value | upcase %}
-               {% assign jugador_dorsal = jugador.dorsal.value %}
-               {% assign jugador_handle = jugador_nombre | handleize %}
-               <option 
-                 value="{{ jugador_handle }}" 
-                 data-name="{{ jugador_nombre }}" 
-                 data-number="{{ jugador_dorsal }}"
-               >
-                 {{ jugador_nombre }} - #{{ jugador_dorsal }}
-               </option>
-             {% endfor %}
+           {% assign player_text = block.settings.player_option_text | default: 'jugador' | downcase %}
+           {% assign article = 'un' %}
+           {% if player_text contains 'jugadora' or player_text contains 'atleta' %}
+             {% assign article = 'una' %}
+           {% endif %}
+           <option value="">Selecciona {{ article }} {{ player_text }}...</option>
+           
+           {% if block.settings.is_unisex_product %}
+             <!-- Opciones masculinas -->
+             <optgroup label="Masculino" class="male-players" {% if block.settings.is_unisex_product %}style="display: block;"{% endif %}>
+               {% if male_jugadores_metaobject_def.values_count > 0 %}
+                 {% for jugador in male_jugadores_metaobject_list %}
+                   {% assign jugador_nombre = jugador.jugador.value | upcase %}
+                   {% assign jugador_dorsal = jugador.dorsal.value %}
+                   {% assign jugador_handle = jugador_nombre | handleize %}
+                   <option 
+                     value="{{ jugador_handle }}" 
+                     data-name="{{ jugador_nombre }}" 
+                     data-number="{{ jugador_dorsal }}"
+                     data-gender="male"
+                   >
+                     {{ jugador_nombre }} - #{{ jugador_dorsal }}
+                   </option>
+                 {% endfor %}
+               {% endif %}
+             </optgroup>
+             
+             <!-- Opciones femeninas -->
+             <optgroup label="Femenino" class="female-players" style="display: none;">
+               {% if female_jugadores_metaobject_def.values_count > 0 %}
+                 {% for jugador in female_jugadores_metaobject_list %}
+                   {% assign jugador_nombre = jugador.jugador.value | upcase %}
+                   {% assign jugador_dorsal = jugador.dorsal.value %}
+                   {% assign jugador_handle = jugador_nombre | handleize %}
+                   <option 
+                     value="{{ jugador_handle }}" 
+                     data-name="{{ jugador_nombre }}" 
+                     data-number="{{ jugador_dorsal }}"
+                     data-gender="female"
+                   >
+                     {{ jugador_nombre }} - #{{ jugador_dorsal }}
+                   </option>
+                 {% endfor %}
+               {% endif %}
+             </optgroup>
            {% else %}
-             <!-- Jugadores de prueba mientras se configura el metaobjeto -->
-             <option value="chris-jones" data-name="CHRIS JONES" data-number="1">CHRIS JONES - #1</option>
-             <option value="sergio-de-la-fuente" data-name="SERGIO DE LA FUENTE" data-number="5">SERGIO DE LA FUENTE - #5</option>
-             <option value="jean-montero" data-name="JEAN MONTERO" data-number="7">JEAN MONTERO - #7</option>
-             <option value="stefan-jovic" data-name="STEFAN JOVIC" data-number="10">STEFAN JOVIC - #10</option>
-             <option value="victor-claver" data-name="VICTOR CLAVER" data-number="12">VICTOR CLAVER - #12</option>
-             <option value="webb-simpson" data-name="WEBB SIMPSON" data-number="15">WEBB SIMPSON - #15</option>
-             <option value="rafa-martinez" data-name="RAFA MARTINEZ" data-number="20">RAFA MARTINEZ - #20</option>
-             <option value="josep-puerto" data-name="JOSEP PUERTO" data-number="23">JOSEP PUERTO - #23</option>
+             <!-- Para productos normales -->
+             {% if jugadores_metaobject_def.values_count > 0 %}
+               {% for jugador in jugadores_metaobject_list %}
+                 {% assign jugador_nombre = jugador.jugador.value | upcase %}
+                 {% assign jugador_dorsal = jugador.dorsal.value %}
+                 {% assign jugador_handle = jugador_nombre | handleize %}
+                 <option 
+                   value="{{ jugador_handle }}" 
+                   data-name="{{ jugador_nombre }}" 
+                   data-number="{{ jugador_dorsal }}"
+                 >
+                   {{ jugador_nombre }} - #{{ jugador_dorsal }}
+                 </option>
+               {% endfor %}
+             {% else %}
+               <!-- Jugadores de prueba mientras se configura el metaobjeto -->
+               <option value="chris-jones" data-name="CHRIS JONES" data-number="1">CHRIS JONES - #1</option>
+               <option value="sergio-de-la-fuente" data-name="SERGIO DE LA FUENTE" data-number="5">SERGIO DE LA FUENTE - #5</option>
+               <option value="jean-montero" data-name="JEAN MONTERO" data-number="7">JEAN MONTERO - #7</option>
+               <option value="stefan-jovic" data-name="STEFAN JOVIC" data-number="10">STEFAN JOVIC - #10</option>
+               <option value="victor-claver" data-name="VICTOR CLAVER" data-number="12">VICTOR CLAVER - #12</option>
+               <option value="webb-simpson" data-name="WEBB SIMPSON" data-number="15">WEBB SIMPSON - #15</option>
+               <option value="rafa-martinez" data-name="RAFA MARTINEZ" data-number="20">RAFA MARTINEZ - #20</option>
+               <option value="josep-puerto" data-name="JOSEP PUERTO" data-number="23">JOSEP PUERTO - #23</option>
+             {% endif %}
            {% endif %}
          </select>
          <svg
@@ -245,6 +523,7 @@
     window.selectCustomizationType = function(element) {
       const playerEnabled = {{ block.settings.enable_player_option | json }};
       const customEnabled = {{ block.settings.enable_custom_option | json }};
+      const isUnisexProduct = {{ block.settings.is_unisex_product | json }};
       const value = element.dataset.value;
       
       // Prevenir selección de opciones deshabilitadas
@@ -256,6 +535,87 @@
       // Llamar a la función original si la opción está habilitada
       if (originalSelectCustomizationType) {
         originalSelectCustomizationType(element);
+      }
+      
+      // Obtener referencias a ambos selectores
+      const genderSelectionWrapper = document.getElementById('gender-selection-wrapper');
+      const teamPatchSelectionWrapper = document.getElementById('team-patch-selection-wrapper');
+      
+      // Para productos unisex, mostrar ambos selectores independientemente del tipo de personalización
+      if (isUnisexProduct) {
+        if (value === 'player' || value === 'user') {
+          // Mostrar ambos selectores para productos unisex cuando hay personalización
+          if (genderSelectionWrapper) {
+            genderSelectionWrapper.style.display = 'block';
+            // Asegurar que se inicialice con género masculino por defecto
+            const defaultGender = document.querySelector('.gender-option[data-value="male"]');
+            if (defaultGender && window.selectGender) {
+              window.selectGender(defaultGender);
+            }
+          }
+          if (teamPatchSelectionWrapper) {
+            teamPatchSelectionWrapper.style.display = 'block';
+            // Asegurar que se inicialice con parche masculino por defecto
+            setTimeout(() => {
+              const defaultPatch = document.querySelector('.team-patch-option[data-value="male"]');
+              const formField = document.getElementById('product_form_team_patch');
+              
+              if (defaultPatch && window.selectTeamPatch) {
+                window.selectTeamPatch(defaultPatch);
+              } else if (formField) {
+                formField.value = 'Parche Masculino';
+                const hiddenField = document.getElementById('selected_team_patch');
+                if (hiddenField) {
+                  hiddenField.value = 'male';
+                }
+              }
+              
+              if (window.personalizadorDebugMode) {
+                console.log('Parche inicializado en selección de personalización:', formField ? formField.value : 'Campo no encontrado');
+              }
+            }, 50);
+          }
+        } else {
+          // Para "none", ocultar ambos selectores y limpiar valores solo si ya tenían contenido
+          if (genderSelectionWrapper) {
+            genderSelectionWrapper.style.display = 'none';
+          }
+          if (teamPatchSelectionWrapper) {
+            teamPatchSelectionWrapper.style.display = 'none';
+            // Solo limpiar valor del parche si ya tenía un valor (no durante inicialización)
+            const formField = document.getElementById('product_form_team_patch');
+            const hiddenField = document.getElementById('selected_team_patch');
+            if (formField && formField.value !== '') {
+              formField.value = '';
+              if (window.personalizadorDebugMode) {
+                console.log('Limpiando parche por "Sin personalización"');
+              }
+            }
+            if (hiddenField && hiddenField.value !== '') {
+              hiddenField.value = '';
+            }
+          }
+        }
+      } else {
+        // Para productos no unisex, ocultar ambos selectores (no limpiar valores ya que no deberían tener parche)
+        if (genderSelectionWrapper) {
+          genderSelectionWrapper.style.display = 'none';
+        }
+        if (teamPatchSelectionWrapper) {
+          teamPatchSelectionWrapper.style.display = 'none';
+          // Para productos no unisex, asegurar que no hay valores de parche
+          const formField = document.getElementById('product_form_team_patch');
+          const hiddenField = document.getElementById('selected_team_patch');
+          if (formField && formField.value !== '') {
+            formField.value = '';
+            if (window.personalizadorDebugMode) {
+              console.log('Limpiando parche para producto no unisex');
+            }
+          }
+          if (hiddenField && hiddenField.value !== '') {
+            hiddenField.value = '';
+          }
+        }
       }
     };
     
@@ -327,10 +687,13 @@
         
         // Esperar un poco más para que se inicialice el selector de jugadores
         setTimeout(() => {
-          // Seleccionar el primer jugador disponible como placeholder
+          // Solo seleccionar automáticamente un jugador si no hay parámetros URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const playerParam = urlParams.get('player');
+          
           const playerSelect = document.querySelector('#customization_player');
-          if (playerSelect && playerSelect.options.length > 1) {
-            // Seleccionar la primera opción que no sea el placeholder vacío
+          if (playerSelect && playerSelect.options.length > 1 && !playerParam) {
+            // Solo seleccionar la primera opción si no hay jugador preseleccionado desde URL
             playerSelect.selectedIndex = 1;
             playerSelect.dispatchEvent(new Event('change', { bubbles: true }));
             
@@ -616,6 +979,168 @@
   .customization-select-wrapper:hover {
     border-color: var(--color-variant-hover-border);
   }
+  
+  /* Estilos para debug */
+  .debug-info {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #6c757d;
+    font-family: monospace;
+  }
+  
+  .debug-info h4 {
+    margin: 0 0 10px 0;
+    color: #495057;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  
+  .debug-info p {
+    margin: 5px 0;
+  }
+  
+  /* Estilos para selección de género */
+  .gender-selection {
+    margin-bottom: 20px;
+  }
+  
+  .gender-selection label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .gender-options {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .gender-option {
+    flex: 1;
+    padding: var(--button-padding-block) var(--button-padding-inline);
+    border: var(--style-border-width-primary) solid var(--color-secondary-button-border);
+    background: var(--color-secondary-button-background);
+    cursor: pointer;
+    text-align: center;
+    border-radius: var(--style-border-radius-buttons-primary);
+    transition: color var(--animation-speed) var(--animation-easing),
+      box-shadow var(--animation-speed) var(--animation-easing),
+      background-color var(--animation-speed) var(--animation-easing);
+    font-family: var(--button-font-family-primary);
+    font-weight: var(--button-font-weight-primary);
+    text-transform: var(--button-text-case-primary);
+    color: var(--color-secondary-button-text);
+    font-size: var(--font-paragraph--size);
+    line-height: var(--font-paragraph--line-height);
+  }
+  
+  .gender-option:hover {
+    color: var(--color-foreground);
+    background-color: var(--color-border);
+    border-color: var(--color-primary);
+  }
+  
+  .gender-option.active {
+    color: var(--color-primary-button-text);
+    background-color: var(--color-primary-button-background);
+    border-color: var(--color-primary-button-border);
+  }
+  
+  .gender-option.active:hover {
+    color: var(--color-primary-button-text);
+    background-color: var(--color-primary-button-background);
+    border-color: var(--color-primary-button-border);
+  }
+  
+  /* Estilos para selector de parche de equipo */
+  .team-patch-selection-wrapper {
+    margin-top: var(--margin-md);
+  }
+  
+  .team-patch-options {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--gap-sm);
+    width: auto;
+  }
+  
+  .team-patch-option {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    position: relative;
+    padding-block: var(--padding-sm);
+    padding-inline: var(--padding-lg);
+    border: var(--variant-picker-button-border-width, 1px) solid var(--color-variant-border);
+    border-radius: var(--variant-picker-button-radius, var(--border-radius));
+    overflow: clip;
+    justify-content: center;
+    min-height: calc(3ch + 1.3em);
+    width: auto;
+    white-space: nowrap;
+    background-color: var(--color-variant-background);
+    color: var(--color-variant-text);
+    cursor: pointer;
+    transition: background-color var(--animation-speed) var(--animation-easing),
+      border-color var(--animation-speed) var(--animation-easing);
+    user-select: none;
+    gap: 0.5rem;
+    flex-direction: row;
+  }
+  
+  .team-patch-option:hover {
+    background-color: var(--color-variant-hover-background);
+    border-color: var(--color-variant-hover-border);
+    color: var(--color-variant-hover-text);
+  }
+  
+  .team-patch-option.active {
+    color: var(--color-selected-variant-text);
+    background-color: var(--color-selected-variant-background);
+    border-color: var(--color-selected-variant-border);
+    transition: background-color var(--animation-speed) var(--animation-easing),
+      border-color var(--animation-speed) var(--animation-easing);
+  }
+  
+  .team-patch-option.active:hover {
+    background-color: var(--color-selected-variant-hover-background);
+    border-color: var(--color-selected-variant-hover-border);
+    color: var(--color-selected-variant-hover-text);
+  }
+  
+  .team-patch-option:focus-visible {
+    border-color: var(--color-foreground);
+    outline: var(--focus-outline-width) solid var(--color-foreground);
+    outline-offset: var(--focus-outline-offset);
+  }
+   
+   /* Estilos para ocultar grupos de jugadores */
+   .customization-select optgroup[style*="display: none"] {
+     display: none !important;
+   }
+   
+   .customization-select optgroup.male-players {
+     display: block;
+   }
+   
+   .customization-select optgroup.female-players {
+     display: none;
+   }
+   
+   /* Cuando el producto es unisex y se selecciona femenino */
+   .unisex-product.female-selected .customization-select optgroup.male-players {
+     display: none !important;
+   }
+   
+   .unisex-product.female-selected .customization-select optgroup.female-players {
+     display: block !important;
+   }
 
   .customization-select {
     padding-block: var(--padding-md);
@@ -931,13 +1456,34 @@
       "type": "header",
       "content": "Opciones de Personalización"
     },
-
+    {
+      "type": "checkbox",
+      "id": "is_unisex_product",
+      "label": "Producto Unisex",
+      "info": "Activar para productos unisex que permiten seleccionar entre jugadores masculinos y femeninos",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "debug_mode",
+      "label": "Modo Debug",
+      "info": "Mostrar información de debug para verificar si el producto es unisex o no",
+      "default": false
+    },
     {
       "type": "checkbox",
       "id": "enable_player_option",
       "label": "Habilitar opción de Jugador",
       "info": "Permite a los usuarios seleccionar jugadores predefinidos",
       "default": true
+    },
+    {
+      "type": "text",
+      "id": "player_option_text",
+      "label": "Texto para opción de Jugador",
+      "info": "Personaliza el texto que se muestra para la opción de jugador (por defecto: 'Jugador')",
+      "default": "Jugador",
+      "visible_if": "{{ block.settings.enable_player_option }}"
     },
     {
       "type": "checkbox",
@@ -947,15 +1493,30 @@
       "default": true
     },
     {
+      "type": "checkbox",
+      "id": "enable_team_patch_selection",
+      "label": "Habilitar selección de parche de equipo",
+      "info": "Permite al usuario elegir entre parche masculino o femenino",
+      "default": false,
+      "visible_if": "{{ block.settings.enable_player_option or block.settings.enable_custom_option }}"
+    },
+    {
       "type": "header",
       "content": "Configuración de Jugadores"
     },
     {
       "type": "text",
       "id": "players_metaobject_definition",
-      "label": "Definición de Metaobjeto de Jugadores",
-      "info": "Handle de la definición de metaobjeto que contiene los jugadores (ej: custom_jugadores)",
+      "label": "Definición de Metaobjeto de Jugadores Masculinos",
+      "info": "Handle de la definición de metaobjeto que contiene los jugadores masculinos (ej: custom_jugadores)",
       "default": "custom_jugadores"
+    },
+    {
+      "type": "text",
+      "id": "female_players_metaobject_definition",
+      "label": "Definición de Metaobjeto de Jugadores Femeninos",
+      "info": "Handle de la definición de metaobjeto que contiene los jugadores femeninos (ej: custom_jugadores_femenino). Solo se usa en productos unisex",
+      "default": "custom_jugadores_femenino"
     },
     {
       "type": "header",

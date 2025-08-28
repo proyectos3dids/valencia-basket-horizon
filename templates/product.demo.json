@@ -217,9 +217,7 @@
                 "enable_player_option": true,
                 "enable_custom_option": true,
                 "enable_team_patch_selection": true,
-                "is_unisex_product": true,
                 "players_metaobject_definition": "custom_jugadores",
-                "female_players_metaobject_definition": "custom_jugadores_femenino",
                 "max_name_length": 15,
                 "max_number_digits": 2
               },
