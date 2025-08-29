@@ -589,7 +589,7 @@
               "name": "t:names.image",
               "static": true,
               "settings": {
-                "product": "camiseta-segunda-equipacion-acb-25-26_pplr_1756456008_412235",
+                "product": "camiseta-segunda-equipacion-acb-25-26_pplr_1756459981_30156",
                 "image_ratio": "adapt",
                 "constrain_to_viewport": "contain"
               },
@@ -617,7 +617,7 @@
       },
       "name": "t:names.featured_product",
       "settings": {
-        "product": "camiseta-segunda-equipacion-acb-25-26",
+        "product": "camiseta-segunda-equipacion-lfe-25-26_pplr_1756458936_472970",
         "layout": "media-left",
         "color_scheme": "scheme-90df58f7-d206-4887-b4a7-6314bd4112c4",
         "padding-block-start": 0,
