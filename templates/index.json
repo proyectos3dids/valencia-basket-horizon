@@ -89,7 +89,7 @@
         "open_in_new_tab": false,
         "media_type_1": "video",
         "image_1": "shopify://shop_images/DSC08143-Mejorado-4NR_8ffac3e5-b586-45f1-acf4-b248fe03abba.jpg",
-        "video_1": "shopify://files/videos/REELS 1 1.1.mp4",
+        "video_1": "shopify://files/videos/REELS 2 1.1.mp4",
         "media_type_2": "image",
         "content_direction": "column",
         "vertical_on_mobile": true,
@@ -195,7 +195,7 @@
         "open_in_new_tab": false,
         "media_type_1": "video",
         "image_1": "shopify://shop_images/DSC08143-Mejorado-4NR_8ffac3e5-b586-45f1-acf4-b248fe03abba.jpg",
-        "video_1": "shopify://files/videos/REELS 1 9.16.mp4",
+        "video_1": "shopify://files/videos/REELS 2 9.16.mp4",
         "media_type_2": "image",
         "content_direction": "column",
         "vertical_on_mobile": true,
@@ -530,8 +530,8 @@
           "static": true,
           "settings": {
             "media_type": "image",
-            "image": "shopify://shop_images/DSC08104-Mejorado-NR6.jpg",
-            "link": "shopify://products/camiseta-primera-equipacion-acb-25-26",
+            "image": "shopify://shop_images/DSC08205-Mejorado-NR.jpg",
+            "link": "shopify://products/camiseta-segunda-equipacion-acb-25-26",
             "video_loop": true,
             "video_autoplay": false,
             "image_position": "cover",
@@ -550,7 +550,7 @@
               "name": "t:names.title",
               "static": true,
               "settings": {
-                "product": "camiseta-primera-equipacion-acb-25-26",
+                "product": "camiseta-segunda-equipacion-acb-25-26",
                 "width": "100%",
                 "max_width": "normal",
                 "alignment": "left",
@@ -589,7 +589,7 @@
               "name": "t:names.image",
               "static": true,
               "settings": {
-                "product": "camiseta-primera-equipacion-acb-25-26",
+                "product": "camiseta-segunda-equipacion-lfe-25-26",
                 "image_ratio": "adapt",
                 "constrain_to_viewport": ""
               },
@@ -618,7 +618,7 @@
       },
       "name": "t:names.featured_product",
       "settings": {
-        "product": "camiseta-primera-equipacion-acb-25-26",
+        "product": "camiseta-segunda-equipacion-acb-25-26",
         "layout": "media-left",
         "color_scheme": "scheme-90df58f7-d206-4887-b4a7-6314bd4112c4",
         "padding-block-start": 0,
@@ -634,8 +634,8 @@
           "static": true,
           "settings": {
             "media_type": "image",
-            "image": "shopify://shop_images/DSC07243.jpg",
-            "link": "shopify://products/camiseta-primera-equipacion-lfe-25-26",
+            "image": "shopify://shop_images/DSC08275.jpg",
+            "link": "shopify://products/camiseta-segunda-equipacion-lfe-25-26",
             "video_loop": true,
             "video_autoplay": false,
             "image_position": "cover",
@@ -654,7 +654,7 @@
               "name": "t:names.title",
               "static": true,
               "settings": {
-                "product": "camiseta-primera-equipacion-lfe-25-26",
+                "product": "camiseta-segunda-equipacion-lfe-25-26",
                 "width": "100%",
                 "max_width": "normal",
                 "alignment": "left",
@@ -693,7 +693,7 @@
               "name": "t:names.image",
               "static": true,
               "settings": {
-                "product": "camiseta-primera-equipacion-lfe-25-26",
+                "product": "camiseta-segunda-equipacion-lfe-25-26",
                 "image_ratio": "adapt",
                 "constrain_to_viewport": ""
               },
@@ -721,7 +721,7 @@
       },
       "name": "t:names.featured_product",
       "settings": {
-        "product": "camiseta-primera-equipacion-lfe-25-26",
+        "product": "camiseta-segunda-equipacion-lfe-25-26",
         "layout": "media-right",
         "color_scheme": "scheme-90df58f7-d206-4887-b4a7-6314bd4112c4",
         "padding-block-start": 0,
