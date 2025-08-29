@@ -67,7 +67,7 @@
           "name": "t:names.button",
           "settings": {
             "label": "Comprar",
-            "link": "shopify://collections/1a-equipacion-2526",
+            "link": "shopify://collections/equipaciones-2526",
             "open_in_new_tab": false,
             "style_class": "button",
             "width": "custom",
@@ -173,7 +173,7 @@
           "name": "t:names.button",
           "settings": {
             "label": "Comprar",
-            "link": "shopify://collections/1a-equipacion-2526",
+            "link": "shopify://collections/equipaciones-2526",
             "open_in_new_tab": false,
             "style_class": "button",
             "width": "fit-content",
