@@ -1282,6 +1282,15 @@
   .customization-field .field__input {
      font-size: var(--font-paragraph--size);
    }
+
+  /* Clases dinámicas para tamaños de fuente del nombre */
+  .customization-field .field__input.large-font {
+    font-size: {{ block.settings.large_font_size | default: 24 }}px;
+  }
+
+  .customization-field .field__input.small-font {
+    font-size: {{ block.settings.small_font_size | default: 18 }}px;
+  }
   
   
   
@@ -1319,6 +1328,12 @@
     horizontalPosition: {{ block.settings.horizontal_position | default: 0.5 }},
     maxNameLength: {{ block.settings.max_name_length | default: 15 }},
     maxNumberDigits: {{ block.settings.max_number_digits | default: 2 }},
+    characterLimitThreshold: {{ block.settings.character_limit_threshold | default: 7 }},
+    largeFontSize: {{ block.settings.large_font_size | default: 24 }},
+    smallFontSize: {{ block.settings.small_font_size | default: 18 }},
+    textColor: '{{ block.settings.text_color | default: "#FFFFFF" }}',
+    targetImageIndex: {{ global_target_image_index | default: block.settings.target_image_index | default: 2 }},
+    navigationImageIndex: {{ global_navigation_image_index | default: block.settings.navigation_image_index | default: 2 }},
     fontUrl: '{{ "daggersquare.ttf" | asset_url }}' // URL completa del asset
   };
   
@@ -1654,6 +1669,67 @@
       "max": 3,
       "step": 1,
       "label": "Máximo de dígitos para el dorsal",
+      "default": 2
+    },
+    {
+      "type": "header",
+      "content": "Configuración de Tamaños de Fuente"
+    },
+    {
+      "type": "range",
+      "id": "character_limit_threshold",
+      "min": 3,
+      "max": 15,
+      "step": 1,
+      "label": "Límite de caracteres para cambio de tamaño",
+      "info": "Nombres con menos caracteres usarán el tamaño grande, nombres con más caracteres usarán el tamaño pequeño",
+      "default": 7
+    },
+    {
+      "type": "range",
+      "id": "large_font_size",
+      "min": 12,
+      "max": 48,
+      "step": 1,
+      "unit": "px",
+      "label": "Tamaño de fuente para nombres cortos",
+      "info": "Tamaño aplicado a nombres con pocos caracteres",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "small_font_size",
+      "min": 8,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "label": "Tamaño de fuente para nombres largos",
+      "info": "Tamaño aplicado a nombres con muchos caracteres",
+      "default": 18
+    },
+    {
+      "type": "header",
+      "content": "Configuración de Colores"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Color del texto (nombre y número)",
+      "info": "Color que se aplicará tanto al nombre como al número en el canvas",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "header",
+      "content": "Configuración de Navegación"
+    },
+    {
+      "type": "range",
+      "id": "target_image_index",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "label": "Imagen de destino al personalizar",
+      "info": "Índice de la imagen a mostrar cuando se activa la personalización (1 = primera imagen, 2 = segunda imagen, etc.)",
       "default": 2
     }
   ],

@@ -56,32 +56,33 @@
     data-product-grid-content
   >
     {% assign render_order_array = render_order | split: ',' %}
-    {% capture media %}
-      <div
-        class="product-information__media"
-        data-testid="product-information-media"
-      >
-        {%- content_for 'block',
-          type: '_product-media-gallery',
-          id: 'media-gallery',
-          closest.product: section.settings.product
-        -%}
-      </div>
-    {% endcapture %}
-
-    {% capture details %}
-      {% content_for 'block',
-        type: '_product-details',
-        id: 'product-details',
-        closest.product: section.settings.product
-      %}
-    {% endcapture %}
+    
+    {% liquid
+      assign personalizador_block = section.blocks | where: 'type', 'personalizador_camisetas' | first
+      assign target_image_index = 2
+      if personalizador_block
+        assign target_image_index = personalizador_block.settings.target_image_index | default: 2
+      endif
+    %}
 
     {% for block in render_order_array %}
       {% if block == 'media' and product_has_media %}
-        {{ media }}
+        <div
+          class="product-information__media"
+          data-testid="product-information-media"
+        >
+          {%- content_for 'block',
+            type: '_product-media-gallery',
+            id: 'media-gallery',
+            closest.product: section.settings.product
+          -%}
+        </div>
       {% elsif block == 'product-details' %}
-        {{ details }}
+        {% content_for 'block',
+          type: '_product-details',
+          id: 'product-details',
+          closest.product: section.settings.product
+        %}
       {% endif %}
     {% endfor %}
   </div>

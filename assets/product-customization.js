@@ -246,6 +246,27 @@ class ProductCustomizationPlayer {
     });
     window.dispatchEvent(event)
   }
+  _applyDynamicFontSize(inputElement, nameLength) {
+    // Método vacío - el cambio de tamaño solo se aplica al canvas, no al input
+    // El input mantiene su tamaño original del CSS
+  }
+  _forceCanvasUpdate() {
+    // Obtener referencia al renderizador desde el contexto global
+    const customizer = window.ProductCustomization;
+    if (customizer && customizer.render) {
+      console.log('🔄 Forcing canvas update with current values:', {
+        name: this.name,
+        number: this.number
+      });
+      
+      // Forzar actualización del canvas con un pequeño delay para asegurar que los cambios se apliquen
+      setTimeout(() => {
+        customizer.render.draw(this.name, this.number, customizer.selectedSponsor);
+      }, 10);
+    } else {
+      console.warn('⚠️ Could not force canvas update - customizer not found');
+    }
+  }
   _clear() {
     this.$playerSelectInput.selectedIndex = 0, this._emitCustomEvent({
       name: void 0,
@@ -305,7 +326,21 @@ class ProductCustomizationUser {
   }
   _handleNameInput(ev) {
     const maxLength = window.productCustomizerSettings?.maxNameLength || 15;
-    this.name = ev.target.value.toUpperCase().slice(0, maxLength), ev.target.value = this.name, this._emitCustomEvent({
+    this.name = ev.target.value.toUpperCase().slice(0, maxLength), ev.target.value = this.name;
+    
+    // Aplicar tamaño de fuente dinámico basado en la longitud del nombre
+    this._applyDynamicFontSize(ev.target, this.name.length);
+    
+    console.log('🔤 Name input changed:', {
+      name: this.name,
+      number: this.number,
+      nameLength: this.name.length
+    });
+    
+    // Forzar actualización inmediata del canvas
+    this._forceCanvasUpdate();
+    
+    this._emitCustomEvent({
       name: this.name,
       number: this.number
     })
@@ -325,13 +360,37 @@ class ProductCustomizationUser {
     });
     window.dispatchEvent(event)
   }
+  _applyDynamicFontSize(inputElement, nameLength) {
+    // Método vacío - el cambio de tamaño solo se aplica al canvas, no al input
+    // El input mantiene su tamaño original del CSS
+  }
+  _forceCanvasUpdate() {
+    // Obtener referencia al renderizador desde el contexto global
+    const customizer = window.ProductCustomization;
+    if (customizer && customizer.render) {
+      console.log('🔄 Forcing canvas update with current values:', {
+        name: this.name,
+        number: this.number
+      });
+      
+      // Forzar actualización del canvas con un pequeño delay para asegurar que los cambios se apliquen
+      setTimeout(() => {
+        customizer.render.draw(this.name, this.number, customizer.selectedSponsor);
+      }, 10);
+    } else {
+      console.warn('⚠️ Could not force canvas update - customizer not found');
+    }
+  }
   visible(bool) {
     if (this.$userWrapper) {
       this.$userWrapper.hidden = !bool, bool || this._clear()
     }
   }
   _clear() {
-    this.$userNameInput.value = "", this.$userNumberInput.value = "", this._emitCustomEvent({
+    this.$userNameInput.value = "", this.$userNumberInput.value = "";
+    // Remover clases de tamaño de fuente al limpiar
+    this.$userNameInput.classList.remove('large-font', 'small-font');
+    this._emitCustomEvent({
       name: "",
       number: ""
     })
@@ -419,7 +478,7 @@ class RenderHandler {
     this.$canvas = Array.from(document.querySelectorAll(".customization_canvas")), this.$canvasMale = this.$canvas.find(canvas => {
       const imageElement = canvas.closest("div").querySelector("image-element img");
       return imageElement && imageElement.src.includes("dummy-male")
-    }), this.renderColor = this.$canvas[0].dataset.rendercolor, this.$canvasFemale = this.$canvas.find(canvas => {
+    }), this.renderColor = window.productCustomizerSettings?.textColor || this.$canvas[0].dataset.rendercolor || '#FFFFFF', this.$canvasFemale = this.$canvas.find(canvas => {
       const imageElement = canvas.closest("div").querySelector("image-element img");
       return imageElement && imageElement.src.includes("dummy-female")
     }), 
@@ -436,16 +495,45 @@ class RenderHandler {
     // No necesitamos navegar a imágenes dummy - el canvas ya está superpuesto
   }
   draw(name, number, sponsor = void 0) {
+    console.log('🖼️ Draw function called with:', { name, number, sponsor });
 
     // Convertir nombre a mayúsculas para renderizado
     const displayName = name ? name.toUpperCase() : name;
-    this._validate() && (this.clear(), this.navigateToImage(sponsor), initializeCanvas(() => {
+    console.log('🖼️ Display name:', displayName, 'Validation:', this._validate());
+    
+    if (!this._validate()) {
+      console.warn('🖼️ Canvas validation failed, skipping draw');
+      return;
+    }
+    
+    // Limpiar canvas inmediatamente
+    this.clear();
+    this.navigateToImage(sponsor);
+    
+    // Forzar actualización inmediata del canvas
+    initializeCanvas(() => {
       for (const canvas of this.$canvas) {
         const ctx = canvas.getContext("2d");
         
         // Obtener configuraciones dinámicas o usar valores por defecto
         const settings = window.productCustomizerSettings || {};
-        const nameFontSize = settings.nameSize || 67;
+        
+        // Calcular tamaño de fuente dinámico basado en la longitud del nombre
+        // Usar tamaños más grandes específicamente para el canvas
+        const threshold = settings.characterLimitThreshold || 7;
+        const nameLength = displayName ? displayName.length : 0;
+        let nameFontSize;
+        
+        if (nameLength < threshold && nameLength > 0) {
+          // Tamaño grande para el canvas
+          nameFontSize = (settings.largeFontSize || 24) * 1.8; // Multiplicador reducido
+        } else if (nameLength > 0) {
+          // Tamaño pequeño para el canvas
+          nameFontSize = (settings.smallFontSize || 18) * 1.6; // Multiplicador reducido
+        } else {
+          nameFontSize = settings.nameSize || 67; // Fallback para nombres vacíos
+        }
+        
         const numberFontSize = settings.numberSize || 300;
         const nameHeightPercent = settings.nameHeight || 0.46;
         const numberHeightPercent = settings.numberHeight || 0.55;
@@ -513,7 +601,7 @@ class RenderHandler {
           ctx.fillText(number.toString(), centerX, numberPositionY);
         }
       }
-    }))
+    });
   }
   drawCurvedText(ctx, text, centerX, centerY, radius) {
 
@@ -1039,7 +1127,7 @@ class ProductCustomization {
       
       // Solo navegar a la segunda imagen si hay personalización activa
       if (detail.name || detail.number) {
-        this._navigateToSecondImage();
+        this._navigateToTargetImage();
       }
       this.render.draw(detail.name, detail.number, this.selectedSponsor);
     } else {
@@ -1062,6 +1150,8 @@ class ProductCustomization {
   }
   _handleUserChange(ev) {
     const detail = ev.detail;
+    console.log('👤 User change event received:', detail);
+    
     detail.name ? this.form.setName(detail.name) : this.form.clearName(), detail.number ? this.form.setNumber(detail.number) : this.form.clearNumber();
     
     // Verificar si hay alguna personalización activa (nombre o número)
@@ -1085,8 +1175,10 @@ class ProductCustomization {
     
     // Solo navegar a la segunda imagen si hay personalización activa
     if (hasCustomization) {
-      this._navigateToSecondImage();
+      this._navigateToTargetImage();
     }
+    
+    console.log('🎨 Calling render.draw with:', { name: detail.name, number: detail.number, sponsor: this.selectedSponsor });
     this.render.draw(detail.name, detail.number, this.selectedSponsor)
   }
   _handleSettingsChange(ev) {
@@ -1209,7 +1301,7 @@ class ProductCustomization {
           const name = nameInput?.value || '';
           const number = numberInput?.value || '';
           if (name || number) {
-            this._navigateToSecondImage();
+            this._navigateToTargetImage();
             this.render.draw(name, number, this.selectedSponsor);
           }
           // Solo limpiar parámetros si no hay parámetros de jugador en la URL y no estamos restaurando
@@ -1331,7 +1423,7 @@ class ProductCustomization {
       
       // Solo navegar a la segunda imagen si el jugador tiene nombre o número
       if (player.name || player.number) {
-        this._navigateToSecondImage();
+        this._navigateToTargetImage();
         console.log('🖼️ Navegando a segunda imagen para jugador:', player.name);
       }
       
@@ -1345,12 +1437,13 @@ class ProductCustomization {
     }
   }
 
-  _navigateToSecondImage() {
+  _navigateToTargetImage() {
     // Find the slideshow component in the product media gallery
     const slideshow = document.querySelector('slideshow-component');
     if (slideshow && slideshow.select) {
-      // Navigate to the second image (index 1)
-      slideshow.select(1);
+      // Navigate to the configured navigation image (convert from 1-based to 0-based index)
+      const navigationIndex = (window.productCustomizerSettings?.navigationImageIndex || 2) - 1;
+      slideshow.select(navigationIndex);
     }
   }
 }

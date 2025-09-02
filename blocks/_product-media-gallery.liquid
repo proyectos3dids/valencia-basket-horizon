@@ -8,6 +8,24 @@
 {%- endif -%}
 
 {%- liquid
+  # Calcular target_image_index y navigation_image_index al inicio del bloque
+  assign target_index = block.settings.target_image_index | default: 2
+  assign navigation_index = block.settings.navigation_image_index | default: 2
+  
+  # Fallback a closest.target_image_index si está disponible
+  if closest.target_image_index
+    assign target_index = closest.target_image_index
+  endif
+  
+  # Fallback a closest.navigation_image_index si está disponible
+  if closest.navigation_image_index
+    assign navigation_index = closest.navigation_image_index
+  endif
+  
+  # Hacer disponible globalmente para otros bloques
+  assign global_target_image_index = target_index
+  assign global_navigation_image_index = navigation_index
+
   assign selected_product = block.settings.product
   assign selected_variant_media = selected_product.selected_or_first_available_variant.featured_media
   assign first_3d_model = selected_product.media | where: 'media_type', 'model' | first
@@ -138,8 +156,9 @@
     {% for media in sorted_media %}
       {% capture children %}
         {%- render 'product-media', media: media -%}
-        {% if forloop.index == 2 %}
-          <!-- Canvas de personalización superpuesto sobre la segunda imagen -->
+
+        {% if forloop.index == target_index %}
+          <!-- Canvas de personalización superpuesto sobre la imagen seleccionada -->
           <canvas 
             class="customization_canvas" 
             width="400" 
@@ -809,6 +828,20 @@
       "step": 1,
       "unit": "px",
       "default": 0
+    },
+    {
+      "type": "number",
+      "id": "target_image_index",
+      "label": "Target Image Index for Canvas",
+      "info": "Index of the image where the customization canvas should be rendered (1-based)",
+      "default": 2
+    },
+    {
+      "type": "number",
+      "id": "navigation_image_index",
+      "label": "Índice de navegación automática",
+      "info": "Número de imagen a la que navegar automáticamente cuando se activa la personalización (1-based)",
+      "default": 2
     }
   ],
   "presets": [

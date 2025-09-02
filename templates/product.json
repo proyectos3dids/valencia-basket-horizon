@@ -47,6 +47,8 @@
             "zoom": true,
             "video_loop": false,
             "hide_variants": true,
+            "target_image_index": 3,
+            "navigation_image_index": 2,
             "padding-block-start": 40,
             "padding-block-end": 43,
             "padding-inline-start": 0,
