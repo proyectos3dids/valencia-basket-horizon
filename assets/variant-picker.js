@@ -57,11 +57,18 @@ export default class VariantPicker extends Component {
     }
 
     if (isOnProductPage) {
+      // Preserve existing URL parameters (type, player, gender, etc.)
+      const currentParams = new URLSearchParams(window.location.search);
+      
+      // Update or remove variant parameter
       if (variantId) {
-        url.searchParams.set('variant', variantId);
+        currentParams.set('variant', variantId);
       } else {
-        url.searchParams.delete('variant');
+        currentParams.delete('variant');
       }
+      
+      // Rebuild URL with all preserved parameters
+      url.search = currentParams.toString();
     }
 
     // Change the path if the option is connected to another product via combined listing.

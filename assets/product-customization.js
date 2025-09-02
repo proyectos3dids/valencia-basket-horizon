@@ -791,27 +791,43 @@ class AddToCartButtonHandler {
          properties['Producto'] = productTitle;
        }
        
-       // Fixed addon variant ID for customization
-       const addonVariantId = 55907473817983;
+       // Check if customization is free (from block settings)
+       const personalizadorBlock = document.querySelector('[data-block-type="personalizador_camisetas"]');
+       const isFreeCustomization = personalizadorBlock && personalizadorBlock.dataset.freeCustomization === 'true';
        
        console.log('🛒 Adding to cart with customization:', {
          baseVariantId,
-         addonVariantId,
+         isFreeCustomization,
          properties
        });
        
-       const items = [
-         { 
-           id: baseVariantId, 
-           quantity: 1
-         },
-         { 
-           id: addonVariantId, 
-           quantity: 1, 
-           parent_id: baseVariantId,
-           properties: Object.keys(properties).length > 0 ? properties : undefined
-         }
-       ];
+       let items;
+       
+       if (isFreeCustomization) {
+         // Free customization: add properties directly to base product
+         items = [
+           { 
+             id: baseVariantId, 
+             quantity: 1,
+             properties: Object.keys(properties).length > 0 ? properties : undefined
+           }
+         ];
+       } else {
+         // Paid customization: add base product + addon product
+         const addonVariantId = 55907473817983;
+         items = [
+           { 
+             id: baseVariantId, 
+             quantity: 1
+           },
+           { 
+             id: addonVariantId, 
+             quantity: 1, 
+             parent_id: baseVariantId,
+             properties: Object.keys(properties).length > 0 ? properties : undefined
+           }
+         ];
+       }
        
        // Clean up undefined properties
        items.forEach(item => {
@@ -863,7 +879,7 @@ class ProductCustomization {
       none: document.querySelector('.variant-wrapper input[name="_customization"][value="none"]'),
       player: document.querySelector('.variant-wrapper input[name="_customization"][value="player"]'),
       user: document.querySelector('.variant-wrapper input[name="_customization"][value="user"]')
-    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this.addToCartHandler = new AddToCartButtonHandler, this._validate() && this._init()
+    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this.addToCartHandler = new AddToCartButtonHandler, this.isRestoringFromUrl = false, this._validate() && this._init()
   }
   _validate() {
     return !!this.$customizationTypeSelect
@@ -872,22 +888,42 @@ class ProductCustomization {
     this.$customizationTypeSelect.addEventListener("change", this._handleCustomizationTypeChange.bind(this)), window.addEventListener(CUSTOMIZATION_PLAYER_CHANGE_EVENT, this._handlePlayerChange.bind(this)), window.addEventListener(CUSTOMIZATION_USER_CHANGE_EVENT, this._handleUserChange.bind(this)), document.addEventListener('customization-settings-changed', this._handleSettingsChange.bind(this)), document.addEventListener('variant:update', this._handleVariantUpdate.bind(this)), this._loadFromSearchParams(), this.form.setSponsor(this.selectedSponsor)
   }
   _handleCustomizationTypeChange(ev) {
+    // Si estamos restaurando desde URL, no procesar este evento
+    if (this.isRestoringFromUrl) {
+      console.log('🔄 Ignorando evento change durante restauración desde URL');
+      return;
+    }
+    
     const type = ev.target.value;
     
     // Verificar si este cambio es parte de la restauración desde URL
     const currentUrl = new URL(window.location);
     const urlType = currentUrl.searchParams.get('type');
+    const playerParam = currentUrl.searchParams.get('player');
     const isRestoringFromUrl = urlType === type;
     
-    console.log('🔄 _handleCustomizationTypeChange:', { type, urlType, isRestoringFromUrl });
+    // Verificar si hay personalización activa en el DOM
+    const customizationTypeInput = document.querySelector('#customization_type');
+    const currentCustomizationType = customizationTypeInput ? customizationTypeInput.value : null;
+    const hasActivePlayerCustomization = currentCustomizationType === 'player';
     
-    // Solo hacer limpieza suave si estamos restaurando desde URL
-    this._set(type, isRestoringFromUrl);
+    console.log('🔄 _handleCustomizationTypeChange:', { type, urlType, playerParam, isRestoringFromUrl, currentCustomizationType, hasActivePlayerCustomization });
     
-    // Solo actualizar parámetros de URL si no estamos restaurando
-    if (!isRestoringFromUrl) {
-      this.searchParams.setCustomizationType(type);
-    }
+    // Para tipo 'player', usar limpieza suave si:
+    // 1. Estamos restaurando desde URL
+    // 2. El tipo es 'player' y ya hay un parámetro 'type=player' en la URL
+    // 3. El tipo es 'player' y hay un parámetro 'player' en la URL
+    // 4. El tipo es 'player' y ya hay una personalización de jugador activa
+    const shouldUseSoftClear = isRestoringFromUrl || 
+                              (type === 'player' && urlType === 'player') ||
+                              (type === 'player' && playerParam) ||
+                              (type === 'player' && hasActivePlayerCustomization);
+    
+    this._set(type, shouldUseSoftClear);
+    
+    // Siempre actualizar parámetros de URL, excepto durante la carga inicial real
+    // (no confundir con cambios de usuario que coinciden con URL actual)
+    this.searchParams.setCustomizationType(type);
     
     // Manejar el estado del botón de añadir al carrito
     const hasCustomization = type !== 'none';
@@ -903,7 +939,11 @@ class ProductCustomization {
             mappedOption = 'Sin personalización';
             break;
           case 'player':
+          case 'male-player':
             mappedOption = 'Jugador';
+            break;
+          case 'female-player':
+            mappedOption = 'Jugadora';
             break;
           case 'user':
             mappedOption = 'Personalizado';
@@ -915,14 +955,35 @@ class ProductCustomization {
     }
   }
   _set(type, soft = false) {
-    this._clear(soft || type !== void 0), this.player.visible(type === "player"), this.user.visible(type === "user"), /* this.sponsor.visible(type === "player" || type === "user") - Patrocinadores deshabilitados */ type === "player" ? this._selectVariant("") : this._selectVariant(type)
+    // Mapear male-player y female-player a player técnicamente
+    const isPlayerType = type === "player" || type === "male-player" || type === "female-player";
+    
+    console.log('🔧 _set called:', {
+      type,
+      soft,
+      isPlayerType,
+      currentUrl: window.location.href,
+      playerParam: new URLSearchParams(window.location.search).get('player')
+    });
+    
+    this._clear(soft), this.player.visible(isPlayerType), this.user.visible(type === "user"), /* this.sponsor.visible(type === "player" || type === "user") - Patrocinadores deshabilitados */ isPlayerType ? this._selectVariant("") : this._selectVariant(type === "male-player" || type === "female-player" ? "player" : type)
   }
   _clear(soft = !1) {
+    console.log('🧹 _clear called:', {
+      soft,
+      willClearParams: !soft,
+      currentUrl: window.location.href,
+      playerParam: new URLSearchParams(window.location.search).get('player')
+    });
+    
     this.form.clear(), this.render.clear();
     
     // Solo limpiar parámetros de URL si no es una limpieza suave
     if (!soft) {
+      console.log('❌ Clearing all URL params');
       this.searchParams.clearAll();
+    } else {
+      console.log('✅ Soft clear - preserving URL params');
     }
     
     // Habilitar botón de añadir al carrito cuando se limpia la personalización
@@ -934,6 +995,8 @@ class ProductCustomization {
     const typeMap = {
       "": "none",
       player: "player",
+      "male-player": "player",
+      "female-player": "player",
       user: "user"
     };
     const variant = this.variants[typeMap[type]];
@@ -982,7 +1045,9 @@ class ProductCustomization {
     } else {
       this._selectVariant("");
       this.form.clear();
-      this.searchParams.clearAll();
+      if (!this.isRestoringFromUrl) {
+        this.searchParams.clearAll();
+      }
       this.render.clear();
       
       // Habilitar botón de añadir al carrito cuando no hay personalización
@@ -1007,7 +1072,9 @@ class ProductCustomization {
     if (hasCustomization) {
       this.searchParams.setCustomizationType('user');
     } else {
-      this.searchParams.clearAll();
+      if (!this.isRestoringFromUrl) {
+        this.searchParams.clearAll();
+      }
     }
     
     // Actualizar campo oculto para las opciones de personalización
@@ -1118,11 +1185,12 @@ class ProductCustomization {
           const selectedPlayerOption = document.querySelector('#customization_player option:checked');
           const hasSelectedPlayer = selectedPlayerOption && selectedPlayerOption.value && selectedPlayerOption.value !== '';
           
-          if (!hasSelectedPlayer) {
+          // Solo limpiar si realmente no hay jugador seleccionado y no estamos en proceso de restauración
+          if (!hasSelectedPlayer && !this.isRestoringFromUrl) {
             console.log('🧹 No player selected, clearing params');
             this.searchParams.clearAll();
           } else {
-            console.log('🎯 Player found in DOM, preserving state');
+            console.log('🎯 Player found in DOM or restoring from URL, preserving state');
           }
           
           // Actualizar opciones de personalización visual
@@ -1144,8 +1212,12 @@ class ProductCustomization {
             this._navigateToSecondImage();
             this.render.draw(name, number, this.selectedSponsor);
           }
-          // Limpiar parámetro de jugador si estamos en modo usuario
-          this.searchParams.clearAll();
+          // Solo limpiar parámetros si no hay parámetros de jugador en la URL y no estamos restaurando
+          const currentUrl = new URL(window.location);
+          const hasPlayerParams = currentUrl.searchParams.get('player') || currentUrl.searchParams.get('type') === 'player';
+          if (!hasPlayerParams && !this.isRestoringFromUrl) {
+            this.searchParams.clearAll();
+          }
           
           // Actualizar opciones de personalización visual
           const customizationOptions = document.querySelectorAll('.customization-option');
@@ -1157,8 +1229,10 @@ class ProductCustomization {
           });
         } else {
           console.log('🧹 No customization, clearing all params');
-          // Si no hay personalización, limpiar parámetros
-          this.searchParams.clearAll();
+          // Solo limpiar parámetros si no estamos restaurando desde URL
+          if (!this.isRestoringFromUrl) {
+            this.searchParams.clearAll();
+          }
           
           // Actualizar opciones de personalización visual
           const customizationOptions = document.querySelectorAll('.customization-option');
@@ -1184,12 +1258,20 @@ class ProductCustomization {
     console.log('🔄 Cargando estado desde URL:', { type: typeParam, player: playerParam, gender: genderParam });
     
     // Si hay tipo de personalización en la URL, restaurarlo
-    if (typeParam) {
-      // Actualizar selector de tipo de personalización
-      if (this.$customizationTypeSelect) {
-        this.$customizationTypeSelect.value = typeParam;
-        this._set(typeParam, true); // Usar limpieza suave al restaurar desde URL
-      }
+      if (typeParam) {
+         // Marcar que estamos restaurando desde URL
+         this.isRestoringFromUrl = true;
+         
+         // Actualizar selector de tipo de personalización
+         if (this.$customizationTypeSelect) {
+           this.$customizationTypeSelect.value = typeParam;
+           this._set(typeParam, true); // Usar limpieza suave al restaurar desde URL
+         }
+         
+         // Desmarcar la bandera después de un breve delay
+         setTimeout(() => {
+           this.isRestoringFromUrl = false;
+         }, 50);
       
       // Actualizar opciones de personalización visual y hacer visibles los selectores correspondientes
       const typeOption = document.querySelector(`.customization-option[data-value="${typeParam}"]`);
