@@ -63,6 +63,12 @@
           ref="variantId"
           value="{{ product.selected_or_first_available_variant.id }}"
         >
+        <!-- Customization hidden fields -->
+        <input type="hidden" id="product_form_player_name" name="properties[Nombre]" value="">
+        <input type="hidden" id="product_form_player_number" name="properties[Dorsal]" value="">
+        <input type="hidden" id="product_form_customization_options" name="properties[Opciones]" value="">
+        <input type="hidden" id="product_form_modelo" name="properties[Modelo]" value="">
+        <input type="hidden" id="product_form_team_patch" name="properties[Parche de equipo]" value="">
         <div
           class="product-form-buttons spacing-style{% if block.settings.stacking %} product-form-buttons--stacked{% endif %}"
           style="{% render 'spacing-style', settings: block.settings %}"

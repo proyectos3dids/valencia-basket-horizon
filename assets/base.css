@@ -1,3 +1,22 @@
+@font-face {
+  font-family: 'DaggerSquare';
+  src: url('daggersquare.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Ensure DaggerSquare font is preloaded and available */
+@supports (font-display: swap) {
+  @font-face {
+    font-family: 'DaggerSquare';
+    src: url('daggersquare.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1490,6 +1509,142 @@ media-gallery:where(.media-gallery--grid) .media-gallery__grid {
 
 .product-media :is(deferred-media, product-model) {
   position: absolute;
+}
+
+/* Canvas de personalización superpuesto sobre la primera imagen */
+.customization_canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Asegurar que el contenedor de medios tenga posición relativa */
+.product-media-container {
+  position: relative;
+}
+
+/* Estilos para opciones de personalización */
+.customization-type-wrapper {
+  margin-bottom: 20px;
+}
+
+.customization-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--color-foreground);
+}
+
+.customization-options {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--gap-sm);
+  width: auto;
+}
+
+.customization-options-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-sm);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.customization-option {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  position: relative;
+  padding-block: var(--padding-sm);
+  padding-inline: var(--padding-lg);
+  border: var(--variant-picker-button-border-width, 1px) solid var(--color-variant-border);
+  border-radius: var(--variant-picker-button-radius, var(--border-radius));
+  overflow: clip;
+  justify-content: center;
+  min-height: calc(3ch + 1.3em);
+  width: auto;
+  white-space: nowrap;
+  background-color: var(--color-variant-background);
+  color: var(--color-variant-text);
+  cursor: pointer;
+  transition: background-color var(--animation-speed) var(--animation-easing),
+    border-color var(--animation-speed) var(--animation-easing);
+  user-select: none;
+  gap: 0.5rem;
+  flex-direction: row;
+}
+
+.customization-option:hover {
+  background-color: var(--color-variant-hover-background);
+  border-color: var(--color-variant-hover-border);
+  color: var(--color-variant-hover-text);
+}
+
+.customization-option.active {
+  color: var(--color-selected-variant-text);
+  background-color: var(--color-selected-variant-background);
+  border-color: var(--color-selected-variant-border);
+  transition: background-color var(--animation-speed) var(--animation-easing),
+    border-color var(--animation-speed) var(--animation-easing);
+}
+
+.customization-option.active:hover {
+  background-color: var(--color-selected-variant-hover-background);
+  border-color: var(--color-selected-variant-hover-border);
+  color: var(--color-selected-variant-hover-text);
+}
+
+.option-text {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.option-price {
+  font-weight: 600;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.customization-option.active .option-price {
+  opacity: 1;
+}
+
+.customization-option:focus-visible {
+  border-color: var(--color-foreground);
+  outline: var(--focus-outline-width) solid var(--color-foreground);
+  outline-offset: var(--focus-outline-offset);
+}
+
+@media screen and (width >= 750px) {
+  .customization-option {
+    padding: var(--padding-xs) var(--padding-md);
+  }
+}
+
+@media screen and (max-width: 749px) {
+  .customization-options-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--gap-sm);
+  }
+  
+  .customization-option {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 12px;
+  }
+  
+  .option-text,
+  .option-price {
+    font-size: 13px;
+  }
 }
 
 @media screen and (width < 750px) {
