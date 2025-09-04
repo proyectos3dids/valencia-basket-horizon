@@ -206,7 +206,7 @@
               "type": "personalizador_camisetas",
               "name": "Personalizador de Camisetas",
               "settings": {
-                "show_advanced_controls": true,
+                "show_advanced_controls": false,
                 "name_size": 26,
                 "name_height_base": 1,
                 "name_fine_tune": 5,
@@ -216,7 +216,7 @@
                 "number_fine_tune": 5,
                 "horizontal_alignment": "auto",
                 "horizontal_position": 0.5,
-                "is_unisex_product": false,
+                "is_unisex_product": true,
                 "debug_mode": false,
                 "enable_player_option": false,
                 "player_option_text": "Jugador",
