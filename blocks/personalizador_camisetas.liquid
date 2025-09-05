@@ -118,6 +118,17 @@
     
     // Inicializar valor por defecto del parche al cargar la página
     const initializeDefaultPatch = function() {
+      const enableTeamPatch = {{ block.settings.enable_team_patch_selection | json }};
+      const showAdvancedControls = {{ block.settings.show_advanced_controls | json }};
+      
+      // Solo inicializar si el parche está habilitado en settings
+      if (!enableTeamPatch && !showAdvancedControls) {
+        if (window.personalizadorDebugMode) {
+          console.log('Parche deshabilitado en settings - no inicializar');
+        }
+        return;
+      }
+      
       const defaultPatch = document.querySelector('.team-patch-option[data-value="male"]');
       const formField = document.getElementById('product_form_team_patch');
       
@@ -233,8 +244,8 @@
   
   <!-- Selector de género eliminado - ahora se maneja con opciones separadas de jugador/jugadora -->
   
-  {% if block.settings.is_unisex_product and block.settings.enable_team_patch_selection or block.settings.is_unisex_product and block.settings.show_advanced_controls %}
-  <!-- Selector de parche de equipo (solo para productos unisex) -->
+  {% if block.settings.enable_team_patch_selection or block.settings.show_advanced_controls %}
+  <!-- Selector de parche de equipo -->
   <div class="team-patch-selection-wrapper" id="team-patch-selection-wrapper" style="display: none;">
     <label class="customization-label">Seleccionar parche de equipo:</label>
     <div class="team-patch-options">
@@ -646,21 +657,20 @@
       const genderSelectionWrapper = document.getElementById('gender-selection-wrapper');
       const teamPatchSelectionWrapper = document.getElementById('team-patch-selection-wrapper');
       
-      // Mostrar el selector de parche solo cuando hay personalización (jugador o personalizado)
-      if (isUnisexProduct) {
+      // Mostrar el selector de parche solo cuando hay personalización Y el setting está habilitado
+      const enableTeamPatch = {{ block.settings.enable_team_patch_selection | json }};
+      const showAdvancedControls = {{ block.settings.show_advanced_controls | json }};
+      
+      if (enableTeamPatch || showAdvancedControls) {
         if (value === 'player' || value === 'male-player' || value === 'female-player' || value === 'user') {
-          // Mostrar selector de parche para productos unisex cuando hay personalización
+          // Mostrar selector de parche cuando hay personalización y está habilitado
            if (teamPatchSelectionWrapper) {
              teamPatchSelectionWrapper.style.display = 'block';
           }
         } else {
-          // Para "none", ocultar ambos selectores y limpiar valores solo si ya tenían contenido
-          if (genderSelectionWrapper) {
-            genderSelectionWrapper.style.display = 'none';
-          }
+          // Para "none", ocultar selector y limpiar valores
           if (teamPatchSelectionWrapper) {
             teamPatchSelectionWrapper.style.display = 'none';
-            // Solo limpiar valor del parche si ya tenía un valor (no durante inicialización)
             const formField = document.getElementById('product_form_team_patch');
             const hiddenField = document.getElementById('selected_team_patch');
             if (formField && formField.value !== '') {
@@ -675,24 +685,32 @@
           }
         }
       } else {
-        // Para productos no unisex, ocultar ambos selectores (no limpiar valores ya que no deberían tener parche)
-        if (genderSelectionWrapper) {
-          genderSelectionWrapper.style.display = 'none';
-        }
+        // Si el parche está deshabilitado, siempre ocultar y limpiar
         if (teamPatchSelectionWrapper) {
           teamPatchSelectionWrapper.style.display = 'none';
-          // Para productos no unisex, asegurar que no hay valores de parche
           const formField = document.getElementById('product_form_team_patch');
           const hiddenField = document.getElementById('selected_team_patch');
-          if (formField && formField.value !== '') {
+          if (formField) {
             formField.value = '';
-            if (window.personalizadorDebugMode) {
-              console.log('Limpiando parche para producto no unisex');
-            }
           }
-          if (hiddenField && hiddenField.value !== '') {
+          if (hiddenField) {
             hiddenField.value = '';
           }
+        }
+      }
+      
+      // Manejar selector de género para productos unisex
+      if (isUnisexProduct) {
+        if (value === 'none') {
+          // Para "none", ocultar selector de género
+          if (genderSelectionWrapper) {
+            genderSelectionWrapper.style.display = 'none';
+          }
+        }
+      } else {
+        // Para productos no unisex, siempre ocultar selector de género
+        if (genderSelectionWrapper) {
+          genderSelectionWrapper.style.display = 'none';
         }
       }
     };
