@@ -209,7 +209,7 @@
                 "name_height_base": 1,
                 "name_fine_tune": 5,
                 "name_curve": 0,
-                "number_size": 160,
+                "number_size": 200,
                 "number_height_base": 4,
                 "number_fine_tune": 5,
                 "horizontal_alignment": "auto",
