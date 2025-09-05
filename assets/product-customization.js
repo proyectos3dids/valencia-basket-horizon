@@ -246,6 +246,27 @@ class ProductCustomizationPlayer {
     });
     window.dispatchEvent(event)
   }
+  _applyDynamicFontSize(inputElement, nameLength) {
+    // Método vacío - el cambio de tamaño solo se aplica al canvas, no al input
+    // El input mantiene su tamaño original del CSS
+  }
+  _forceCanvasUpdate() {
+    // Obtener referencia al renderizador desde el contexto global
+    const customizer = window.ProductCustomization;
+    if (customizer && customizer.render) {
+      console.log('🔄 Forcing canvas update with current values:', {
+        name: this.name,
+        number: this.number
+      });
+      
+      // Forzar actualización del canvas con un pequeño delay para asegurar que los cambios se apliquen
+      setTimeout(() => {
+        customizer.render.draw(this.name, this.number, customizer.selectedSponsor);
+      }, 10);
+    } else {
+      console.warn('⚠️ Could not force canvas update - customizer not found');
+    }
+  }
   _clear() {
     this.$playerSelectInput.selectedIndex = 0, this._emitCustomEvent({
       name: void 0,
@@ -305,7 +326,21 @@ class ProductCustomizationUser {
   }
   _handleNameInput(ev) {
     const maxLength = window.productCustomizerSettings?.maxNameLength || 15;
-    this.name = ev.target.value.toUpperCase().slice(0, maxLength), ev.target.value = this.name, this._emitCustomEvent({
+    this.name = ev.target.value.toUpperCase().slice(0, maxLength), ev.target.value = this.name;
+    
+    // Aplicar tamaño de fuente dinámico basado en la longitud del nombre
+    this._applyDynamicFontSize(ev.target, this.name.length);
+    
+    console.log('🔤 Name input changed:', {
+      name: this.name,
+      number: this.number,
+      nameLength: this.name.length
+    });
+    
+    // Forzar actualización inmediata del canvas
+    this._forceCanvasUpdate();
+    
+    this._emitCustomEvent({
       name: this.name,
       number: this.number
     })
@@ -325,13 +360,37 @@ class ProductCustomizationUser {
     });
     window.dispatchEvent(event)
   }
+  _applyDynamicFontSize(inputElement, nameLength) {
+    // Método vacío - el cambio de tamaño solo se aplica al canvas, no al input
+    // El input mantiene su tamaño original del CSS
+  }
+  _forceCanvasUpdate() {
+    // Obtener referencia al renderizador desde el contexto global
+    const customizer = window.ProductCustomization;
+    if (customizer && customizer.render) {
+      console.log('🔄 Forcing canvas update with current values:', {
+        name: this.name,
+        number: this.number
+      });
+      
+      // Forzar actualización del canvas con un pequeño delay para asegurar que los cambios se apliquen
+      setTimeout(() => {
+        customizer.render.draw(this.name, this.number, customizer.selectedSponsor);
+      }, 10);
+    } else {
+      console.warn('⚠️ Could not force canvas update - customizer not found');
+    }
+  }
   visible(bool) {
     if (this.$userWrapper) {
       this.$userWrapper.hidden = !bool, bool || this._clear()
     }
   }
   _clear() {
-    this.$userNameInput.value = "", this.$userNumberInput.value = "", this._emitCustomEvent({
+    this.$userNameInput.value = "", this.$userNumberInput.value = "";
+    // Remover clases de tamaño de fuente al limpiar
+    this.$userNameInput.classList.remove('large-font', 'small-font');
+    this._emitCustomEvent({
       name: "",
       number: ""
     })
@@ -419,7 +478,7 @@ class RenderHandler {
     this.$canvas = Array.from(document.querySelectorAll(".customization_canvas")), this.$canvasMale = this.$canvas.find(canvas => {
       const imageElement = canvas.closest("div").querySelector("image-element img");
       return imageElement && imageElement.src.includes("dummy-male")
-    }), this.renderColor = this.$canvas[0].dataset.rendercolor, this.$canvasFemale = this.$canvas.find(canvas => {
+    }), this.renderColor = window.productCustomizerSettings?.textColor || this.$canvas[0].dataset.rendercolor || '#FFFFFF', this.$canvasFemale = this.$canvas.find(canvas => {
       const imageElement = canvas.closest("div").querySelector("image-element img");
       return imageElement && imageElement.src.includes("dummy-female")
     }), 
@@ -436,16 +495,45 @@ class RenderHandler {
     // No necesitamos navegar a imágenes dummy - el canvas ya está superpuesto
   }
   draw(name, number, sponsor = void 0) {
+    console.log('🖼️ Draw function called with:', { name, number, sponsor });
 
     // Convertir nombre a mayúsculas para renderizado
     const displayName = name ? name.toUpperCase() : name;
-    this._validate() && (this.clear(), this.navigateToImage(sponsor), initializeCanvas(() => {
+    console.log('🖼️ Display name:', displayName, 'Validation:', this._validate());
+    
+    if (!this._validate()) {
+      console.warn('🖼️ Canvas validation failed, skipping draw');
+      return;
+    }
+    
+    // Limpiar canvas inmediatamente
+    this.clear();
+    this.navigateToImage(sponsor);
+    
+    // Forzar actualización inmediata del canvas
+    initializeCanvas(() => {
       for (const canvas of this.$canvas) {
         const ctx = canvas.getContext("2d");
         
         // Obtener configuraciones dinámicas o usar valores por defecto
         const settings = window.productCustomizerSettings || {};
-        const nameFontSize = settings.nameSize || 67;
+        
+        // Calcular tamaño de fuente dinámico basado en la longitud del nombre
+        // Usar tamaños más grandes específicamente para el canvas
+        const threshold = settings.characterLimitThreshold || 7;
+        const nameLength = displayName ? displayName.length : 0;
+        let nameFontSize;
+        
+        if (nameLength < threshold && nameLength > 0) {
+          // Tamaño grande para el canvas
+          nameFontSize = (settings.largeFontSize || 24) * 1.8; // Multiplicador reducido
+        } else if (nameLength > 0) {
+          // Tamaño pequeño para el canvas
+          nameFontSize = (settings.smallFontSize || 18) * 1.6; // Multiplicador reducido
+        } else {
+          nameFontSize = settings.nameSize || 67; // Fallback para nombres vacíos
+        }
+        
         const numberFontSize = settings.numberSize || 300;
         const nameHeightPercent = settings.nameHeight || 0.46;
         const numberHeightPercent = settings.numberHeight || 0.55;
@@ -513,7 +601,7 @@ class RenderHandler {
           ctx.fillText(number.toString(), centerX, numberPositionY);
         }
       }
-    }))
+    });
   }
   drawCurvedText(ctx, text, centerX, centerY, radius) {
 
@@ -791,27 +879,43 @@ class AddToCartButtonHandler {
          properties['Producto'] = productTitle;
        }
        
-       // Fixed addon variant ID for customization
-       const addonVariantId = 55907473817983;
+       // Check if customization is free (from block settings)
+       const personalizadorBlock = document.querySelector('[data-block-type="personalizador_camisetas"]');
+       const isFreeCustomization = personalizadorBlock && personalizadorBlock.dataset.freeCustomization === 'true';
        
        console.log('🛒 Adding to cart with customization:', {
          baseVariantId,
-         addonVariantId,
+         isFreeCustomization,
          properties
        });
        
-       const items = [
-         { 
-           id: baseVariantId, 
-           quantity: 1
-         },
-         { 
-           id: addonVariantId, 
-           quantity: 1, 
-           parent_id: baseVariantId,
-           properties: Object.keys(properties).length > 0 ? properties : undefined
-         }
-       ];
+       let items;
+       
+       if (isFreeCustomization) {
+         // Free customization: add properties directly to base product
+         items = [
+           { 
+             id: baseVariantId, 
+             quantity: 1,
+             properties: Object.keys(properties).length > 0 ? properties : undefined
+           }
+         ];
+       } else {
+         // Paid customization: add base product + addon product
+         const addonVariantId = 55907473817983;
+         items = [
+           { 
+             id: baseVariantId, 
+             quantity: 1
+           },
+           { 
+             id: addonVariantId, 
+             quantity: 1, 
+             parent_id: baseVariantId,
+             properties: Object.keys(properties).length > 0 ? properties : undefined
+           }
+         ];
+       }
        
        // Clean up undefined properties
        items.forEach(item => {
@@ -863,7 +967,7 @@ class ProductCustomization {
       none: document.querySelector('.variant-wrapper input[name="_customization"][value="none"]'),
       player: document.querySelector('.variant-wrapper input[name="_customization"][value="player"]'),
       user: document.querySelector('.variant-wrapper input[name="_customization"][value="user"]')
-    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this.addToCartHandler = new AddToCartButtonHandler, this._validate() && this._init()
+    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this.addToCartHandler = new AddToCartButtonHandler, this.isRestoringFromUrl = false, this._validate() && this._init()
   }
   _validate() {
     return !!this.$customizationTypeSelect
@@ -872,22 +976,42 @@ class ProductCustomization {
     this.$customizationTypeSelect.addEventListener("change", this._handleCustomizationTypeChange.bind(this)), window.addEventListener(CUSTOMIZATION_PLAYER_CHANGE_EVENT, this._handlePlayerChange.bind(this)), window.addEventListener(CUSTOMIZATION_USER_CHANGE_EVENT, this._handleUserChange.bind(this)), document.addEventListener('customization-settings-changed', this._handleSettingsChange.bind(this)), document.addEventListener('variant:update', this._handleVariantUpdate.bind(this)), this._loadFromSearchParams(), this.form.setSponsor(this.selectedSponsor)
   }
   _handleCustomizationTypeChange(ev) {
+    // Si estamos restaurando desde URL, no procesar este evento
+    if (this.isRestoringFromUrl) {
+      console.log('🔄 Ignorando evento change durante restauración desde URL');
+      return;
+    }
+    
     const type = ev.target.value;
     
     // Verificar si este cambio es parte de la restauración desde URL
     const currentUrl = new URL(window.location);
     const urlType = currentUrl.searchParams.get('type');
+    const playerParam = currentUrl.searchParams.get('player');
     const isRestoringFromUrl = urlType === type;
     
-    console.log('🔄 _handleCustomizationTypeChange:', { type, urlType, isRestoringFromUrl });
+    // Verificar si hay personalización activa en el DOM
+    const customizationTypeInput = document.querySelector('#customization_type');
+    const currentCustomizationType = customizationTypeInput ? customizationTypeInput.value : null;
+    const hasActivePlayerCustomization = currentCustomizationType === 'player';
     
-    // Solo hacer limpieza suave si estamos restaurando desde URL
-    this._set(type, isRestoringFromUrl);
+    console.log('🔄 _handleCustomizationTypeChange:', { type, urlType, playerParam, isRestoringFromUrl, currentCustomizationType, hasActivePlayerCustomization });
     
-    // Solo actualizar parámetros de URL si no estamos restaurando
-    if (!isRestoringFromUrl) {
-      this.searchParams.setCustomizationType(type);
-    }
+    // Para tipo 'player', usar limpieza suave si:
+    // 1. Estamos restaurando desde URL
+    // 2. El tipo es 'player' y ya hay un parámetro 'type=player' en la URL
+    // 3. El tipo es 'player' y hay un parámetro 'player' en la URL
+    // 4. El tipo es 'player' y ya hay una personalización de jugador activa
+    const shouldUseSoftClear = isRestoringFromUrl || 
+                              (type === 'player' && urlType === 'player') ||
+                              (type === 'player' && playerParam) ||
+                              (type === 'player' && hasActivePlayerCustomization);
+    
+    this._set(type, shouldUseSoftClear);
+    
+    // Siempre actualizar parámetros de URL, excepto durante la carga inicial real
+    // (no confundir con cambios de usuario que coinciden con URL actual)
+    this.searchParams.setCustomizationType(type);
     
     // Manejar el estado del botón de añadir al carrito
     const hasCustomization = type !== 'none';
@@ -903,7 +1027,11 @@ class ProductCustomization {
             mappedOption = 'Sin personalización';
             break;
           case 'player':
+          case 'male-player':
             mappedOption = 'Jugador';
+            break;
+          case 'female-player':
+            mappedOption = 'Jugadora';
             break;
           case 'user':
             mappedOption = 'Personalizado';
@@ -915,14 +1043,35 @@ class ProductCustomization {
     }
   }
   _set(type, soft = false) {
-    this._clear(soft || type !== void 0), this.player.visible(type === "player"), this.user.visible(type === "user"), /* this.sponsor.visible(type === "player" || type === "user") - Patrocinadores deshabilitados */ type === "player" ? this._selectVariant("") : this._selectVariant(type)
+    // Mapear male-player y female-player a player técnicamente
+    const isPlayerType = type === "player" || type === "male-player" || type === "female-player";
+    
+    console.log('🔧 _set called:', {
+      type,
+      soft,
+      isPlayerType,
+      currentUrl: window.location.href,
+      playerParam: new URLSearchParams(window.location.search).get('player')
+    });
+    
+    this._clear(soft), this.player.visible(isPlayerType), this.user.visible(type === "user"), /* this.sponsor.visible(type === "player" || type === "user") - Patrocinadores deshabilitados */ isPlayerType ? this._selectVariant("") : this._selectVariant(type === "male-player" || type === "female-player" ? "player" : type)
   }
   _clear(soft = !1) {
+    console.log('🧹 _clear called:', {
+      soft,
+      willClearParams: !soft,
+      currentUrl: window.location.href,
+      playerParam: new URLSearchParams(window.location.search).get('player')
+    });
+    
     this.form.clear(), this.render.clear();
     
     // Solo limpiar parámetros de URL si no es una limpieza suave
     if (!soft) {
+      console.log('❌ Clearing all URL params');
       this.searchParams.clearAll();
+    } else {
+      console.log('✅ Soft clear - preserving URL params');
     }
     
     // Habilitar botón de añadir al carrito cuando se limpia la personalización
@@ -934,6 +1083,8 @@ class ProductCustomization {
     const typeMap = {
       "": "none",
       player: "player",
+      "male-player": "player",
+      "female-player": "player",
       user: "user"
     };
     const variant = this.variants[typeMap[type]];
@@ -976,13 +1127,15 @@ class ProductCustomization {
       
       // Solo navegar a la segunda imagen si hay personalización activa
       if (detail.name || detail.number) {
-        this._navigateToSecondImage();
+        this._navigateToTargetImage();
       }
       this.render.draw(detail.name, detail.number, this.selectedSponsor);
     } else {
       this._selectVariant("");
       this.form.clear();
-      this.searchParams.clearAll();
+      if (!this.isRestoringFromUrl) {
+        this.searchParams.clearAll();
+      }
       this.render.clear();
       
       // Habilitar botón de añadir al carrito cuando no hay personalización
@@ -997,6 +1150,8 @@ class ProductCustomization {
   }
   _handleUserChange(ev) {
     const detail = ev.detail;
+    console.log('👤 User change event received:', detail);
+    
     detail.name ? this.form.setName(detail.name) : this.form.clearName(), detail.number ? this.form.setNumber(detail.number) : this.form.clearNumber();
     
     // Verificar si hay alguna personalización activa (nombre o número)
@@ -1007,7 +1162,9 @@ class ProductCustomization {
     if (hasCustomization) {
       this.searchParams.setCustomizationType('user');
     } else {
-      this.searchParams.clearAll();
+      if (!this.isRestoringFromUrl) {
+        this.searchParams.clearAll();
+      }
     }
     
     // Actualizar campo oculto para las opciones de personalización
@@ -1018,8 +1175,10 @@ class ProductCustomization {
     
     // Solo navegar a la segunda imagen si hay personalización activa
     if (hasCustomization) {
-      this._navigateToSecondImage();
+      this._navigateToTargetImage();
     }
+    
+    console.log('🎨 Calling render.draw with:', { name: detail.name, number: detail.number, sponsor: this.selectedSponsor });
     this.render.draw(detail.name, detail.number, this.selectedSponsor)
   }
   _handleSettingsChange(ev) {
@@ -1118,11 +1277,12 @@ class ProductCustomization {
           const selectedPlayerOption = document.querySelector('#customization_player option:checked');
           const hasSelectedPlayer = selectedPlayerOption && selectedPlayerOption.value && selectedPlayerOption.value !== '';
           
-          if (!hasSelectedPlayer) {
+          // Solo limpiar si realmente no hay jugador seleccionado y no estamos en proceso de restauración
+          if (!hasSelectedPlayer && !this.isRestoringFromUrl) {
             console.log('🧹 No player selected, clearing params');
             this.searchParams.clearAll();
           } else {
-            console.log('🎯 Player found in DOM, preserving state');
+            console.log('🎯 Player found in DOM or restoring from URL, preserving state');
           }
           
           // Actualizar opciones de personalización visual
@@ -1141,11 +1301,15 @@ class ProductCustomization {
           const name = nameInput?.value || '';
           const number = numberInput?.value || '';
           if (name || number) {
-            this._navigateToSecondImage();
+            this._navigateToTargetImage();
             this.render.draw(name, number, this.selectedSponsor);
           }
-          // Limpiar parámetro de jugador si estamos en modo usuario
-          this.searchParams.clearAll();
+          // Solo limpiar parámetros si no hay parámetros de jugador en la URL y no estamos restaurando
+          const currentUrl = new URL(window.location);
+          const hasPlayerParams = currentUrl.searchParams.get('player') || currentUrl.searchParams.get('type') === 'player';
+          if (!hasPlayerParams && !this.isRestoringFromUrl) {
+            this.searchParams.clearAll();
+          }
           
           // Actualizar opciones de personalización visual
           const customizationOptions = document.querySelectorAll('.customization-option');
@@ -1157,8 +1321,10 @@ class ProductCustomization {
           });
         } else {
           console.log('🧹 No customization, clearing all params');
-          // Si no hay personalización, limpiar parámetros
-          this.searchParams.clearAll();
+          // Solo limpiar parámetros si no estamos restaurando desde URL
+          if (!this.isRestoringFromUrl) {
+            this.searchParams.clearAll();
+          }
           
           // Actualizar opciones de personalización visual
           const customizationOptions = document.querySelectorAll('.customization-option');
@@ -1184,12 +1350,20 @@ class ProductCustomization {
     console.log('🔄 Cargando estado desde URL:', { type: typeParam, player: playerParam, gender: genderParam });
     
     // Si hay tipo de personalización en la URL, restaurarlo
-    if (typeParam) {
-      // Actualizar selector de tipo de personalización
-      if (this.$customizationTypeSelect) {
-        this.$customizationTypeSelect.value = typeParam;
-        this._set(typeParam, true); // Usar limpieza suave al restaurar desde URL
-      }
+      if (typeParam) {
+         // Marcar que estamos restaurando desde URL
+         this.isRestoringFromUrl = true;
+         
+         // Actualizar selector de tipo de personalización
+         if (this.$customizationTypeSelect) {
+           this.$customizationTypeSelect.value = typeParam;
+           this._set(typeParam, true); // Usar limpieza suave al restaurar desde URL
+         }
+         
+         // Desmarcar la bandera después de un breve delay
+         setTimeout(() => {
+           this.isRestoringFromUrl = false;
+         }, 50);
       
       // Actualizar opciones de personalización visual y hacer visibles los selectores correspondientes
       const typeOption = document.querySelector(`.customization-option[data-value="${typeParam}"]`);
@@ -1249,7 +1423,7 @@ class ProductCustomization {
       
       // Solo navegar a la segunda imagen si el jugador tiene nombre o número
       if (player.name || player.number) {
-        this._navigateToSecondImage();
+        this._navigateToTargetImage();
         console.log('🖼️ Navegando a segunda imagen para jugador:', player.name);
       }
       
@@ -1263,12 +1437,13 @@ class ProductCustomization {
     }
   }
 
-  _navigateToSecondImage() {
+  _navigateToTargetImage() {
     // Find the slideshow component in the product media gallery
     const slideshow = document.querySelector('slideshow-component');
     if (slideshow && slideshow.select) {
-      // Navigate to the second image (index 1)
-      slideshow.select(1);
+      // Navigate to the configured navigation image (convert from 1-based to 0-based index)
+      const navigationIndex = (window.productCustomizerSettings?.navigationImageIndex || 2) - 1;
+      slideshow.select(navigationIndex);
     }
   }
 }
