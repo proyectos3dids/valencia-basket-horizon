@@ -227,7 +227,7 @@
                 "female_players_metaobject_definition": "custom_jugadores_femenino",
                 "max_name_length": 15,
                 "max_number_digits": 2,
-                "character_limit_threshold": 9,
+                "character_limit_threshold": 10,
                 "large_font_size": 24,
                 "small_font_size": 18,
                 "text_color": "#ffffff",
