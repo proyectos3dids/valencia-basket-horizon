@@ -760,6 +760,34 @@
     function validateCustomizationOptions() {
       const playerEnabled = {{ block.settings.enable_player_option | json }};
       const customEnabled = {{ block.settings.enable_custom_option | json }};
+      const enableTeamPatch = {{ block.settings.enable_team_patch_selection | json }};
+      const showAdvancedControls = {{ block.settings.show_advanced_controls | json }};
+      
+      // Manejar visibilidad del selector de parche
+      const teamPatchSelectionWrapper = document.getElementById('team-patch-selection-wrapper');
+      if (teamPatchSelectionWrapper) {
+        if (enableTeamPatch || showAdvancedControls) {
+          teamPatchSelectionWrapper.style.display = 'block';
+          // Inicializar parche por defecto si no tiene valor
+          const formField = document.getElementById('product_form_team_patch');
+          if (formField && !formField.value) {
+            setTimeout(() => {
+              const defaultPatch = document.querySelector('.team-patch-option[data-value="male"]');
+              if (defaultPatch && window.selectTeamPatch) {
+                window.selectTeamPatch(defaultPatch);
+              } else if (formField) {
+                formField.value = 'Parche Masculino';
+                const hiddenField = document.getElementById('selected_team_patch');
+                if (hiddenField) {
+                  hiddenField.value = 'male';
+                }
+              }
+            }, 50);
+          }
+        } else {
+          teamPatchSelectionWrapper.style.display = 'none';
+        }
+      }
       
       // Si no hay opciones habilitadas, mantener solo "Sin personalización"
       if (!playerEnabled && !customEnabled) {
