@@ -222,7 +222,7 @@
                 "female_player_option_text": "Jugadora",
                 "enable_custom_option": true,
                 "enable_team_patch_selection": false,
-                "free_customization": false,
+                "free_customization": true,
                 "players_metaobject_definition": "custom_jugadores",
                 "female_players_metaobject_definition": "",
                 "max_name_length": 15,

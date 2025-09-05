@@ -902,7 +902,7 @@ class AddToCartButtonHandler {
          ];
        } else {
          // Paid customization: add base product + addon product
-         const addonVariantId = 55907473817983;
+         const addonVariantId = 55937051459967;
          items = [
            { 
              id: baseVariantId, 

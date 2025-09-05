@@ -230,7 +230,7 @@
                 "character_limit_threshold": 10,
                 "large_font_size": 24,
                 "small_font_size": 18,
-                "text_color": "#ffffff",
+                "text_color": "#31559f",
                 "target_image_index": 2
               },
               "blocks": {}
