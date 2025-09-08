@@ -214,7 +214,7 @@
                 "number_fine_tune": 5,
                 "horizontal_alignment": "auto",
                 "horizontal_position": 0.5,
-                "is_unisex_product": true,
+                "is_unisex_product": false,
                 "debug_mode": false,
                 "enable_player_option": true,
                 "player_option_text": "Jugador",
