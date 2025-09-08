@@ -148,20 +148,6 @@
             style="position: absolute; top: 0; left: 0; z-index: 10; pointer-events: none;"
           ></canvas>
           
-          <!-- Indicador de debug mode (controlado por JavaScript) -->
-          <div id="debug_mode_indicator" style="position: absolute; top: 10px; right: 10px; background: rgba(255, 0, 0, 0.8); color: white; padding: 5px 10px; font-size: 12px; font-weight: bold; z-index: 1000; border-radius: 3px; display: none;">
-            DEBUG MODE ACTIVO
-          </div>
-          
-          <script>
-            // Verificar el estado del debug mode y mostrar/ocultar el indicador
-            document.addEventListener('DOMContentLoaded', function() {
-              const debugIndicator = document.getElementById('debug_mode_indicator');
-              if (debugIndicator && window.personalizadorDebugMode === true) {
-                debugIndicator.style.display = 'block';
-              }
-            });
-          </script>
         {% endif %}
       {% endcapture %}
       {% capture class %}
