@@ -134,76 +134,6 @@
           },
           "block_order": []
         },
-        "group_FNxKCG": {
-          "type": "group",
-          "name": "t:names.group",
-          "settings": {
-            "link": "",
-            "open_in_new_tab": false,
-            "content_direction": "row",
-            "vertical_on_mobile": false,
-            "horizontal_alignment": "flex-start",
-            "vertical_alignment": "center",
-            "align_baseline": false,
-            "horizontal_alignment_flex_direction_column": "flex-end",
-            "vertical_alignment_flex_direction_column": "center",
-            "gap": 10,
-            "width": "custom",
-            "custom_width": 100,
-            "width_mobile": "custom",
-            "custom_width_mobile": 100,
-            "height": "custom",
-            "custom_height": 100,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "background_media": "none",
-            "video_position": "cover",
-            "background_image_position": "cover",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "toggle_overlay": false,
-            "overlay_color": "#00000026",
-            "overlay_style": "solid",
-            "gradient_direction": "to top",
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "text_hXeQnE": {
-              "type": "text",
-              "name": "t:names.text",
-              "settings": {
-                "text": "<p><strong>Horarios Tienda Oficial:</strong></p><p><strong>De lunes a sábado</strong><br/>10:00-20:00</p><p><em>*Estos horarios pueden variar los días de partidos, en función de los eventos del recinto y los festivos.</em></p><p><a href=\"mailto:tienda@valenciabasket.com\" target=\"_blank\" title=\"mailto:tienda@valenciabasket.com\"><strong>tienda@valenciabasket.com</strong></a></p>",
-                "width": "100%",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "paragraph",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "var(--color-foreground)",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "text_hXeQnE"
-          ]
-        },
         "group_DUVM3W": {
           "type": "group",
           "name": "t:names.group",
@@ -332,6 +262,76 @@
             "button_iXPF3P"
           ]
         },
+        "group_FNxKCG": {
+          "type": "group",
+          "name": "t:names.group",
+          "settings": {
+            "link": "",
+            "open_in_new_tab": false,
+            "content_direction": "row",
+            "vertical_on_mobile": false,
+            "horizontal_alignment": "flex-start",
+            "vertical_alignment": "center",
+            "align_baseline": false,
+            "horizontal_alignment_flex_direction_column": "flex-end",
+            "vertical_alignment_flex_direction_column": "center",
+            "gap": 10,
+            "width": "custom",
+            "custom_width": 100,
+            "width_mobile": "custom",
+            "custom_width_mobile": 100,
+            "height": "custom",
+            "custom_height": 100,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "background_media": "none",
+            "video_position": "cover",
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "toggle_overlay": false,
+            "overlay_color": "#00000026",
+            "overlay_style": "solid",
+            "gradient_direction": "to top",
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "text_hXeQnE": {
+              "type": "text",
+              "name": "t:names.text",
+              "settings": {
+                "text": "<p><strong>Horarios  y Ubicación Tienda Oficial:</strong></p><p>Roig Arena, Calle Pintor Gassent puerta D.</p><p>46013 Valencia</p><p><strong>De lunes a sábado</strong><br/>10:00-20:00</p><p><em>*Estos horarios pueden variar los días de partidos, en función de los eventos del recinto y los festivos.</em></p><p><a href=\"mailto:tienda@valenciabasket.com\" target=\"_blank\" title=\"mailto:tienda@valenciabasket.com\"><strong>tienda@valenciabasket.com</strong></a></p>",
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "paragraph",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "text_hXeQnE"
+          ]
+        },
         "payment_icons_XThNMi": {
           "type": "payment-icons",
           "name": "t:names.payment_icons",
@@ -350,8 +350,8 @@
         "divider_hFm3am",
         "image_zPQddt",
         "footer_utilities_KRaGcH",
-        "group_FNxKCG",
         "group_DUVM3W",
+        "group_FNxKCG",
         "payment_icons_XThNMi"
       ],
       "settings": {
