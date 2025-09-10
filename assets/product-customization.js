@@ -173,7 +173,7 @@ class SearchParamsHandler {
 }
 class ProductCustomizationPlayer {
   constructor() {
-    this.$playerWrapper = document.querySelector("#customization_player_wrapper"), this.$playerSelectInput = document.querySelector("#customization_player"), this.players = this.$playerSelectInput ? Array.from(this.$playerSelectInput.querySelectorAll('option')).filter(option => option.value).map(option => ({
+    this.canvasUpdateTimer = null, this.$playerWrapper = document.querySelector("#customization_player_wrapper"), this.$playerSelectInput = document.querySelector("#customization_player"), this.players = this.$playerSelectInput ? Array.from(this.$playerSelectInput.querySelectorAll('option')).filter(option => option.value).map(option => ({
       name: option.getAttribute("data-name"),
       number: option.getAttribute("data-number"),
       handle: option.value
@@ -259,15 +259,26 @@ class ProductCustomizationPlayer {
         number: this.number
       });
       
-      // Forzar actualización del canvas con un pequeño delay para asegurar que los cambios se apliquen
-      setTimeout(() => {
+      // Cancelar cualquier actualización pendiente para evitar solapamiento
+      if (this.canvasUpdateTimer) {
+        clearTimeout(this.canvasUpdateTimer);
+      }
+      
+      // Usar un delay más largo para evitar actualizaciones demasiado rápidas
+      this.canvasUpdateTimer = setTimeout(() => {
         customizer.render.draw(this.name, this.number, customizer.selectedSponsor);
-      }, 10);
+        this.canvasUpdateTimer = null;
+      }, 300);
     } else {
       console.warn('⚠️ Could not force canvas update - customizer not found');
     }
   }
   _clear() {
+    // Cancelar cualquier actualización pendiente del canvas
+    if (this.canvasUpdateTimer) {
+      clearTimeout(this.canvasUpdateTimer);
+      this.canvasUpdateTimer = null;
+    }
     this.$playerSelectInput.selectedIndex = 0, this._emitCustomEvent({
       name: void 0,
       number: void 0,
@@ -316,7 +327,7 @@ class ProductCustomizationPlayer {
 }
 class ProductCustomizationUser {
   constructor() {
-    this.$userWrapper = document.querySelector("#customization_user_wrapper"), this.$userNameInput = document.querySelector("#customization_user_name"), this.$userNumberInput = document.querySelector("#customization_user_number"), this.name = "", this.number = "", this._validate() && this._init()
+    this.canvasUpdateTimer = null, this.$userWrapper = document.querySelector("#customization_user_wrapper"), this.$userNameInput = document.querySelector("#customization_user_name"), this.$userNumberInput = document.querySelector("#customization_user_number"), this.name = "", this.number = "", this._validate() && this._init()
   }
   _validate() {
     return this.$userWrapper && this.$userNameInput && this.$userNumberInput
@@ -337,8 +348,10 @@ class ProductCustomizationUser {
       nameLength: this.name.length
     });
     
-    // Forzar actualización inmediata del canvas
-    this._forceCanvasUpdate();
+    // Usar debounce centralizado del canvas
+    if (window.ProductCustomization) {
+      window.ProductCustomization._debouncedRender(this.name, this.number, window.ProductCustomization.selectedSponsor);
+    }
     
     this._emitCustomEvent({
       name: this.name,
@@ -373,10 +386,16 @@ class ProductCustomizationUser {
         number: this.number
       });
       
-      // Forzar actualización del canvas con un pequeño delay para asegurar que los cambios se apliquen
-      setTimeout(() => {
+      // Cancelar cualquier actualización pendiente para evitar solapamiento
+      if (this.canvasUpdateTimer) {
+        clearTimeout(this.canvasUpdateTimer);
+      }
+      
+      // Usar un delay más largo para evitar actualizaciones demasiado rápidas
+      this.canvasUpdateTimer = setTimeout(() => {
         customizer.render.draw(this.name, this.number, customizer.selectedSponsor);
-      }, 10);
+        this.canvasUpdateTimer = null;
+      }, 300);
     } else {
       console.warn('⚠️ Could not force canvas update - customizer not found');
     }
@@ -387,6 +406,11 @@ class ProductCustomizationUser {
     }
   }
   _clear() {
+    // Cancelar cualquier actualización pendiente del canvas
+    if (this.canvasUpdateTimer) {
+      clearTimeout(this.canvasUpdateTimer);
+      this.canvasUpdateTimer = null;
+    }
     this.$userNameInput.value = "", this.$userNumberInput.value = "";
     // Remover clases de tamaño de fuente al limpiar
     this.$userNameInput.classList.remove('large-font', 'small-font');
@@ -967,10 +991,20 @@ class ProductCustomization {
       none: document.querySelector('.variant-wrapper input[name="_customization"][value="none"]'),
       player: document.querySelector('.variant-wrapper input[name="_customization"][value="player"]'),
       user: document.querySelector('.variant-wrapper input[name="_customization"][value="user"]')
-    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this.addToCartHandler = new AddToCartButtonHandler, this.isRestoringFromUrl = false, this._validate() && this._init()
+    }, this.sponsor = new ProductCustomizationSponsor, this.selectedSponsor = "none", this.searchParams = new SearchParamsHandler, this.player = new ProductCustomizationPlayer, this.user = new ProductCustomizationUser, this.form = new ProductFormHandler, this.render = new RenderHandler, this.addToCartHandler = new AddToCartButtonHandler, this.isRestoringFromUrl = false, this.renderTimer = null, this._validate() && this._init()
   }
   _validate() {
     return !!this.$customizationTypeSelect
+  }
+  
+  _debouncedRender(name, number, sponsor) {
+    if (this.renderTimer) {
+      clearTimeout(this.renderTimer);
+    }
+    this.renderTimer = setTimeout(() => {
+      this.render.draw(name, number, sponsor);
+      this.renderTimer = null;
+    }, 300);
   }
   _init() {
     this.$customizationTypeSelect.addEventListener("change", this._handleCustomizationTypeChange.bind(this)), window.addEventListener(CUSTOMIZATION_PLAYER_CHANGE_EVENT, this._handlePlayerChange.bind(this)), window.addEventListener(CUSTOMIZATION_USER_CHANGE_EVENT, this._handleUserChange.bind(this)), document.addEventListener('customization-settings-changed', this._handleSettingsChange.bind(this)), document.addEventListener('variant:update', this._handleVariantUpdate.bind(this)), this._loadFromSearchParams(), this.form.setSponsor(this.selectedSponsor)
@@ -1129,7 +1163,7 @@ class ProductCustomization {
       if (detail.name || detail.number) {
         this._navigateToTargetImage();
       }
-      this.render.draw(detail.name, detail.number, this.selectedSponsor);
+      this._debouncedRender(detail.name, detail.number, this.selectedSponsor);
     } else {
       this._selectVariant("");
       this.form.clear();
@@ -1179,7 +1213,7 @@ class ProductCustomization {
     }
     
     console.log('🎨 Calling render.draw with:', { name: detail.name, number: detail.number, sponsor: this.selectedSponsor });
-    this.render.draw(detail.name, detail.number, this.selectedSponsor)
+    this._debouncedRender(detail.name, detail.number, this.selectedSponsor)
   }
   _handleSettingsChange(ev) {
 
@@ -1190,14 +1224,14 @@ class ProductCustomization {
       const selectedPlayer = this.player.players.find(p => p.handle === this.searchParams.getPlayer());
       if (selectedPlayer) {
 
-        this.render.draw(selectedPlayer.name, selectedPlayer.number, this.selectedSponsor);
+        this._debouncedRender(selectedPlayer.name, selectedPlayer.number, this.selectedSponsor);
       }
     } else if (currentType === 'user') {
       const nameInput = document.querySelector('#customization_user_name');
       const numberInput = document.querySelector('#customization_user_number');
       if (nameInput && numberInput) {
 
-        this.render.draw(nameInput.value, numberInput.value, this.selectedSponsor);
+        this._debouncedRender(nameInput.value, numberInput.value, this.selectedSponsor);
       }
     }
   }
@@ -1302,7 +1336,7 @@ class ProductCustomization {
           const number = numberInput?.value || '';
           if (name || number) {
             this._navigateToTargetImage();
-            this.render.draw(name, number, this.selectedSponsor);
+            this._debouncedRender(name, number, this.selectedSponsor);
           }
           // Solo limpiar parámetros si no hay parámetros de jugador en la URL y no estamos restaurando
           const currentUrl = new URL(window.location);
@@ -1429,7 +1463,7 @@ class ProductCustomization {
       
       // Forzar regeneración del canvas
       console.log('🎨 Regenerando canvas para jugador:', player.name, player.number);
-      this.render.draw(player.name, player.number, this.selectedSponsor);
+      this._debouncedRender(player.name, player.number, this.selectedSponsor);
     } else {
       console.log('❌ Jugador no encontrado para parámetro:', playerParam);
       this.$customizationTypeSelect.selectedIndex = 0;
