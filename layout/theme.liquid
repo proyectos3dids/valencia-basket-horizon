@@ -52,6 +52,9 @@
       {{ content_for_layout }}
     </main>
 
+    {% comment %} Inyectar datos de colección para detección de jugador {% endcomment %}
+    {% render 'collection-player-data' %}
+
     {% sections 'footer-group' %}
 
     {% render 'search-modal' %}

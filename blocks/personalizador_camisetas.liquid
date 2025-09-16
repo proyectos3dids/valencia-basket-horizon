@@ -2,6 +2,12 @@
   Sección de personalización de camisetas con sliders para configurar posición y tamaño
 {% endcomment %}
 
+{% comment %} Cargar scripts específicos para páginas de colección {% endcomment %}
+{% if template.name == 'collection' %}
+  <script src="{{ 'player-collection-detector.js' | asset_url }}" defer></script>
+  <script src="{{ 'product-customization-collection.js' | asset_url }}" defer></script>
+{% endif %}
+
 <div data-enable-team-patch="{{ section.settings.enable_team_patch }}" style="display: none;"></div>
 
 <script>
@@ -10,14 +16,12 @@
   window.isUnisexProduct = {{ block.settings.is_unisex_product | json }};
   
   // Debug: Verificar el valor de enable_team_patch
-  console.log('🔍 DEBUG INICIAL: enable_team_patch desde Liquid:', {{ section.settings.enable_team_patch | json }});
   
   // Verificar que el elemento data-enable-team-patch esté disponible
   document.addEventListener('DOMContentLoaded', function() {
     const enableTeamPatchElement = document.querySelector('[data-enable-team-patch]');
-    console.log('🔍 DEBUG DOM: enableTeamPatchElement encontrado:', !!enableTeamPatchElement);
     if (enableTeamPatchElement) {
-      console.log('🔍 DEBUG DOM: data-enable-team-patch valor:', enableTeamPatchElement.dataset.enableTeamPatch);
+      // Element found, ready for initialization
     }
   });
   
@@ -38,9 +42,6 @@
         femaleOptgroup.style.display = 'block';
       }
       
-      if (window.personalizadorDebugMode) {
-        console.log('Producto unisex inicializado - ambos optgroups visibles');
-      }
     }
     
     // Función para seleccionar parche de equipo
@@ -66,15 +67,8 @@
       const quickBuyContainer = document.querySelector('.accelerated-checkout-block');
       if (quickBuyContainer) {
         quickBuyContainer.style.display = 'none';
-        if (window.personalizadorDebugMode) {
-          console.log('Ocultando botones de compra rápida debido a selección de parche');
-        }
       }
       
-      if (window.personalizadorDebugMode) {
-        console.log('Parche de equipo seleccionado:', selectedPatch);
-        console.log('Campo del formulario actualizado:', formField ? formField.value : 'Campo no encontrado');
-      }
     };
     
     // Inicializar valor por defecto del parche al cargar la página
@@ -83,16 +77,10 @@
       const enableTeamPatch = {{ block.settings.enable_team_patch_selection | json }};
       
       if (!enableTeamPatch) {
-        if (window.personalizadorDebugMode) {
-          console.log('Parche deshabilitado en settings - no inicializando');
-        }
         // Si el selector de parche está deshabilitado, asegurar que los botones de compra rápida estén visibles
         const quickBuyContainer = document.querySelector('.accelerated-checkout-block');
         if (quickBuyContainer) {
           quickBuyContainer.style.display = '';
-          if (window.personalizadorDebugMode) {
-            console.log('Mostrando botones de compra rápida - selector de parche deshabilitado');
-          }
         }
         return;
       }
@@ -101,12 +89,6 @@
       const formField = document.getElementById('product_form_team_patch');
       const hiddenField = document.getElementById('selected_team_patch');
       
-      if (window.personalizadorDebugMode) {
-        console.log('Inicializando parche por defecto...');
-        console.log('Setting habilitado:', enableTeamPatch);
-        console.log('Elemento parche encontrado:', !!defaultPatch);
-        console.log('Campo formulario encontrado:', !!formField);
-      }
       
       // Siempre inicializar el campo del formulario cuando el setting esté activo
       
@@ -121,9 +103,6 @@
       const quickBuyContainer = document.querySelector('.accelerated-checkout-block');
       if (quickBuyContainer) {
         quickBuyContainer.style.display = 'none';
-        if (window.personalizadorDebugMode) {
-          console.log('Ocultando botones de compra rápida - selector de parche habilitado');
-        }
       }
       
       // Si existe el elemento visual, también actualizarlo
@@ -131,13 +110,6 @@
         window.selectTeamPatch(defaultPatch);
       }
       
-      if (window.personalizadorDebugMode) {
-        console.log('Parche inicializado:', {
-          formField: formField ? formField.value : 'No encontrado',
-          hiddenField: hiddenField ? hiddenField.value : 'No encontrado',
-          visualElement: !!defaultPatch
-        });
-      }
     };
     
     // Ejecutar inicialización con un pequeño delay para asegurar que el DOM esté listo
@@ -156,20 +128,7 @@
       if (event.target.matches('form[data-type="add-to-cart-form"]')) {
         const teamPatchField = document.getElementById('product_form_team_patch');
         const selectedPatchField = document.getElementById('selected_team_patch');
-        
-        if (window.personalizadorDebugMode) {
-          console.log('🛒 ENVÍO DEL FORMULARIO - Valores de parche:');
-          console.log('product_form_team_patch:', teamPatchField ? teamPatchField.value : 'Campo no encontrado');
-          console.log('selected_team_patch:', selectedPatchField ? selectedPatchField.value : 'Campo no encontrado');
-          
-          // Mostrar todos los campos properties del formulario
-          const form = event.target;
-          const propertyInputs = form.querySelectorAll('input[name^="properties["]');
-          console.log('Todos los campos properties:');
-          propertyInputs.forEach(input => {
-            console.log(`${input.name}: "${input.value}"`);
-          });
-        }
+        // Form submission handling
       }
     });
   });
@@ -184,7 +143,10 @@
 </div>
 {% endif %}
 
-<div class="product-customization-settings" data-block-type="personalizador_camisetas" data-free-customization="{{ block.settings.free_customization }}">
+<div class="product-customization-settings" 
+     data-block-type="personalizador_camisetas" 
+     data-free-customization="{{ block.settings.free_customization }}"
+     {% if template.name == 'collection' %}style="display: none;"{% endif %}>
   {%- comment -%}
       <h3>{{ 'products.product.customization.settings_title' | t | default: 'Configuración de Personalización' }}</h3>
   {%- endcomment -%}
@@ -279,6 +241,23 @@
     <!-- Configuración del Dorsal -->
     <div class="control-group">
       <h4>{{ 'products.product.customization.number_settings' | t | default: 'Configuración del Dorsal' }}</h4>
+      
+      <!-- 🔍 DEBUG: Indicador visual del valor actual -->
+      <div class="debug-info" style="background: #f0f8ff; border: 2px solid #4a90e2; border-radius: 8px; padding: 12px; margin-bottom: 15px; font-family: monospace; font-size: 12px;">
+        <div style="font-weight: bold; color: #2c5aa0; margin-bottom: 8px;">🔍 DEBUG: Configuración Actual</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div><strong>numberSize:</strong> <span id="debug-number-size">{{ block.settings.number_size | default: 160 }}</span>px</div>
+          <div><strong>Fuente:</strong> <span id="debug-number-source" style="{% if block.settings.number_size %}color: #27ae60;{% else %}color: #f39c12;{% endif %}">{% if block.settings.number_size %}Schema ({{ block.settings.number_size }}){% else %}Default (160){% endif %}</span></div>
+          <div><strong>Template:</strong> <span>{{ template.name }}{% if template.suffix %}.{{ template.suffix }}{% endif %}</span></div>
+          <div><strong>Block ID:</strong> <span style="font-size: 10px;">{{ block.id }}</span></div>
+          {% if template.name == 'collection' %}
+          <div style="grid-column: 1 / -1; background: #e8f5e8; padding: 8px; border-radius: 4px; margin-top: 8px;">
+            <strong>🏪 Colección:</strong> {{ collection.handle }} (ID: {{ collection.id }})<br>
+            <small>Configuración aplicada desde templates/collection.json</small>
+          </div>
+          {% endif %}
+        </div>
+      </div>
       
       <div class="slider-control">
         <label for="number-size-slider">{{ 'products.product.customization.number_size' | t | default: 'Tamaño Dorsal (px)' }}</label>
@@ -593,9 +572,6 @@
     }
     
     window.selectCustomizationType = function(element) {
-      console.log('🔍 DEBUG: ===== INICIO selectCustomizationType =====');
-      console.log('🔍 DEBUG: Elemento recibido:', element);
-      console.log('🔍 DEBUG: dataset.value:', element.dataset.value);
       
       const playerEnabled = {{ block.settings.enable_player_option | json }};
       const femalePlayerEnabled = {{ block.settings.enable_female_player_option | json }};
@@ -603,19 +579,7 @@
       const isUnisexProduct = {{ block.settings.is_unisex_product | json }};
       const value = element.dataset.value;
       
-      console.log('🔧 selectCustomizationType called:', {
-        value: value,
-        classList: element.classList.toString(),
-        isMale: element.classList.contains('male-player-option'),
-        isFemale: element.classList.contains('female-player-option')
-      });
       
-      console.log('🔍 DEBUG: Configuraciones del bloque:', {
-        playerEnabled: playerEnabled,
-        femalePlayerEnabled: femalePlayerEnabled,
-        customEnabled: customEnabled,
-        isUnisexProduct: isUnisexProduct
-      });
       
       // Prevenir selección de opciones deshabilitadas
       if ((element.classList.contains('male-player-option') && !playerEnabled) || 
@@ -633,9 +597,7 @@
           customizationType = 'female-player';
         }
       }
-      
-      console.log('🎯 Determined customizationType:', customizationType);
-      
+
       // Manejar la visibilidad de las listas de jugadores según el tipo
       handlePlayerListVisibility(customizationType);
       
@@ -651,12 +613,10 @@
       const hiddenInput = document.querySelector('#customization_type');
       if (hiddenInput) {
         hiddenInput.value = element.dataset.value;
-        console.log('📋 Hidden input updated to:', hiddenInput.value);
         
         // Disparar evento change para mantener compatibilidad
         const changeEvent = new Event('change', { bubbles: true });
         hiddenInput.dispatchEvent(changeEvent);
-        console.log('🔔 Change event dispatched');
       }
       
       // Obtener referencia al selector de parche
@@ -664,40 +624,22 @@
       
       // Mostrar el selector de parche siempre que el setting esté activo
       const enableTeamPatch = {{ block.settings.enable_team_patch_selection | json }};
-      
-      console.log('🔍 DEBUG: ===== CONTROL BOTÓN COMPRA RÁPIDA =====');
-      console.log('🔍 DEBUG: enableTeamPatch (block.settings):', enableTeamPatch);
-      console.log('🔍 DEBUG: value seleccionado:', value);
-      
+
       // Controlar la visibilidad del botón de compra rápida
       const quickBuyButton = document.querySelector('.accelerated-checkout-block');
-      console.log('🔍 DEBUG: quickBuyButton encontrado:', !!quickBuyButton);
       
       if (enableTeamPatch) {
         // Si el selector de parche está habilitado, SIEMPRE ocultar el botón de compra rápida
-        console.log('🔍 DEBUG: RAMA enableTeamPatch = true - OCULTANDO botón');
         if (quickBuyButton) {
           quickBuyButton.style.display = 'none';
-          console.log('🔍 DEBUG: quickBuyButton.style.display establecido a "none"');
-          if (window.personalizadorDebugMode) {
-            console.log('🚫 Ocultando botón de compra rápida - selector de parche habilitado (valor: ' + value + ')');
-          }
         }
       } else {
-        console.log('🔍 DEBUG: RAMA enableTeamPatch = false - evaluando valor');
         // Si el selector de parche está deshabilitado, mostrar el botón solo para "Sin personalización"
         if (quickBuyButton) {
           if (value === 'none') {
-            console.log('🔍 DEBUG: value === "none" - MOSTRANDO botón');
             quickBuyButton.style.display = 'block';
-            if (window.personalizadorDebugMode) {
-              console.log('✅ Mostrando botón de compra rápida - sin personalización y sin selector de parche');
-            }
           } else {
             quickBuyButton.style.display = 'none';
-            if (window.personalizadorDebugMode) {
-              console.log('🚫 Ocultando botón de compra rápida - hay personalización');
-            }
           }
         }
       }
@@ -709,21 +651,12 @@
           if (enableTeamPatch) {
             // Si hay selector de parche, SIEMPRE ocultar sin importar el valor
             window.productCustomization.buttonHandler._hideQuickBuy();
-            if (window.personalizadorDebugMode) {
-              console.log('🔄 Sistema sincronizado: ocultando botón - selector de parche habilitado');
-            }
           } else if (value === 'none') {
             // Solo si no hay selector de parche y es "sin personalización", mostrar
             window.productCustomization.buttonHandler._showQuickBuy();
-            if (window.personalizadorDebugMode) {
-              console.log('🔄 Sistema sincronizado: mostrando botón - sin personalización y sin selector');
-            }
           } else {
             // Si hay personalización, ocultar
             window.productCustomization.buttonHandler._hideQuickBuy();
-            if (window.personalizadorDebugMode) {
-              console.log('🔄 Sistema sincronizado: ocultando botón - hay personalización');
-            }
           }
         }, 50);
       }
@@ -741,20 +674,15 @@
             // Limpiar completamente los valores del parche
             if (formField) {
               formField.value = '';
-              console.log('🧹 Campo formulario parche limpiado (enableTeamPatch=true, value=none)');
             }
             if (hiddenField) {
               hiddenField.value = '';
-              console.log('🧹 Campo oculto parche limpiado (enableTeamPatch=true, value=none)');
             }
             
             // Remover clases activas de opciones de parche
             const patchOptions = document.querySelectorAll('.team-patch-option');
             patchOptions.forEach(opt => opt.classList.remove('active'));
             
-            if (window.personalizadorDebugMode) {
-              console.log('🧹 Valores de parche limpiados para "Sin personalización" con selector habilitado');
-            }
           }
           
           // Solo configurar parche por defecto si hay personalización
@@ -774,9 +702,6 @@
                 defaultPatchOption.classList.add('active');
               }
               
-              if (window.personalizadorDebugMode) {
-                console.log(`Configurando parche por defecto: ${defaultPatch} para ${customizationType}`);
-              }
             }
           } else {
             // Sin personalización pero selector visible - mantener valor por defecto
@@ -798,9 +723,6 @@
                 defaultPatchOption.classList.add('active');
               }
               
-              if (window.personalizadorDebugMode) {
-                console.log('Configurando parche masculino por defecto sin personalización');
-              }
             }
           }
         }
@@ -816,37 +738,23 @@
             // Limpiar completamente los valores del parche
             if (formField) {
               formField.value = '';
-              console.log('🧹 Campo formulario parche limpiado');
             }
             if (hiddenField) {
               hiddenField.value = '';
-              console.log('🧹 Campo oculto parche limpiado');
             }
             
             // Remover clases activas de opciones de parche
             const patchOptions = document.querySelectorAll('.team-patch-option');
             patchOptions.forEach(opt => opt.classList.remove('active'));
             
-            if (window.personalizadorDebugMode) {
-              console.log('🧹 Valores de parche limpiados para "Sin personalización"');
-            }
           } else {
             // Para otros valores, limpiar si ya tenían valor
             if (formField && formField.value !== '') {
               formField.value = '';
-              if (window.personalizadorDebugMode) {
-                console.log('Limpiando parche por setting deshabilitado');
-              }
             }
             if (hiddenField && hiddenField.value !== '') {
               hiddenField.value = '';
             }
-          }
-           }
-         }
-          }
-          if (window.personalizadorDebugMode && !enableTeamPatch) {
-            console.log('Selector de parche deshabilitado por setting');
           }
         }
       }
@@ -1446,9 +1354,7 @@
   .customization-field .field__input.small-font {
     font-size: {{ block.settings.small_font_size | default: 18 }}px;
   }
-  
-  
-  
+
   @media (max-width: 768px) {
     .slider-control {
       flex-direction: column;
@@ -1468,8 +1374,9 @@
 
 <script src="{{ 'product-customization.js' | asset_url }}" defer></script>
 
-
 <script>
+  // 🔍 DEBUG DETALLADO: Rastreo del origen del numberSize
+  
   // Exponer configuraciones a JavaScript
   window.productCustomizerSettings = {
     nameSize: {{ block.settings.name_size | default: 37 }},
@@ -1491,6 +1398,23 @@
     navigationImageIndex: {{ global_navigation_image_index | default: block.settings.navigation_image_index | default: 2 }},
     fontUrl: '{{ "daggersquare.ttf" | asset_url }}' // URL completa del asset
   };
+  
+
+  // 🔍 DEBUG: Información de configuración cargada
+  
+  // 🔍 DEBUG: Análisis detallado del origen de datos (solo ejecutar una vez)
+  if (!window.debugAnalysisExecuted) {
+    window.debugAnalysisExecuted = true;
+    const numberSizeRaw = '{{ block.settings.number_size }}';
+    const numberSizeValue = {{ block.settings.number_size | default: 160 }};
+    const isFromSchema = numberSizeRaw !== '';
+    const isFromDefault = numberSizeRaw === '';
+
+  // Verificar si estamos en una página de colección
+  if ('{{ template.name }}' === 'collection') {
+    }
+    
+  }
   
   // Inicializar event listeners para los sliders de debug
   document.addEventListener('DOMContentLoaded', function() {
@@ -1526,6 +1450,17 @@
             case 'numberSize':
               valueSpan.textContent = value + 'px';
               window.productCustomizerSettings.numberSize = value;
+              // 🔍 DEBUG: Actualizar indicador visual
+              const debugNumberSize = document.getElementById('debug-number-size');
+              const debugNumberSource = document.getElementById('debug-number-source');
+              if (debugNumberSize) {
+                debugNumberSize.textContent = value;
+              }
+              if (debugNumberSource) {
+                debugNumberSource.textContent = 'Usuario (modificado)';
+                debugNumberSource.style.color = '#e74c3c';
+                debugNumberSource.style.fontWeight = 'bold';
+              }
               break;
             case 'numberHeightBase':
               valueSpan.textContent = (value * 10) + '%';

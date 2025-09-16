@@ -1,0 +1,27 @@
+{% comment %}
+  Snippet para inyectar datos de colección necesarios para la detección de jugador
+  Se debe incluir en las páginas de colección
+{% endcomment %}
+
+{% if template.name == 'collection' and collection %}
+  <!-- Datos de colección para detección de jugador -->
+  <div 
+    data-collection-handle="{{ collection.handle }}"
+    data-collection-title="{{ collection.title | escape }}"
+    data-collection-id="{{ collection.id }}"
+    style="display: none;"
+    class="collection-player-data"
+  ></div>
+
+  <script>
+    // Variables globales para acceso fácil desde JavaScript
+    window.collectionHandle = {{ collection.handle | json }};
+    window.collectionTitle = {{ collection.title | json }};
+    window.collectionId = {{ collection.id | json }};
+  </script>
+
+  <!-- Meta tags para SEO y detección adicional -->
+  <meta name="collection-handle" content="{{ collection.handle }}">
+  <meta name="collection-title" content="{{ collection.title | escape }}">
+  <meta name="collection-id" content="{{ collection.id }}">
+{% endif %}

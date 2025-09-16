@@ -1,0 +1,181 @@
+{% comment %}
+  Galería de producto con canvas de personalización para páginas de colección
+  Basado en _product-card-gallery.liquid pero con canvas integrado
+{% endcomment %}
+
+{% capture children %}
+  {% unless block.settings.product == blank %}
+    {% render 'product-card-badges', product: block.settings.product %}
+    {%  if settings.quick_add or settings.mobile_quick_add %}
+      {% render 'quick-add', product: block.settings.product, section_id: section.id %}
+    {% endif %}
+    
+    {% comment %} Canvas de personalización para colecciones {% endcomment %}
+    <canvas 
+      class="customization_canvas collection-canvas" 
+      width="280" 
+      height="360" 
+      style="position: absolute; top: 0; left: 0; z-index: 10; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; width: 100%; height: 100%;"
+      data-product-id="{{ block.settings.product.id }}"
+      data-rendercolor="{{ block.settings.text_color | default: '#FFFFFF' }}"
+    ></canvas>
+  {% endunless %}
+{% endcapture %}
+
+{% render 'card-gallery', children: children %}
+
+{% # Title and price for the zoomed out grid view %}
+<div class="product-grid-view-zoom-out--details">
+  {% if block.settings.product == blank %}
+    <h3 class="h4">{{ 'content.product_card_placeholder' | t }}</h3>
+  {% else %}
+    <h3 class="h4">{{ block.settings.product.title }}</h3>
+    <div class="h6">
+      <product-price data-product-id="{{ block.settings.product.id }}">
+        {% render 'price', product_resource: block.settings.product, show_unit_price: false %}
+      </product-price>
+    </div>
+  {% endif %}
+</div>
+
+{% schema %}
+{
+  "name": "Product Image Custom",
+  "tag": null,
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "t:settings.product"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "t:options.auto"
+        },
+        {
+          "value": "portrait",
+          "label": "t:options.portrait"
+        },
+        {
+          "value": "square",
+          "label": "t:options.square"
+        },
+        {
+          "value": "landscape",
+          "label": "t:options.landscape"
+        }
+      ],
+      "default": "portrait",
+      "label": "t:settings.aspect_ratio",
+      "info": "t:info.aspect_ratio_adjusted"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Color del texto personalizado",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "header",
+      "content": "t:content.borders"
+    },
+    {
+      "type": "select",
+      "id": "border",
+      "label": "t:settings.style",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:options.none"
+        },
+        {
+          "value": "solid",
+          "label": "t:options.solid"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "label": "t:settings.thickness",
+      "default": 1,
+      "visible_if": "{{ block.settings.border != 'none' }}"
+    },
+    {
+      "type": "range",
+      "id": "border_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "label": "t:settings.opacity",
+      "default": 100,
+      "visible_if": "{{ block.settings.border != 'none' }}"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "label": "t:settings.corner_radius",
+      "default": 0,
+      "visible_if": "{{ block.settings.border != 'none' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:content.spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:settings.padding_top",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:settings.padding_bottom",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:settings.padding_left",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:settings.padding_right",
+      "default": 0
+    }
+  ]
+}
+{% endschema %}
