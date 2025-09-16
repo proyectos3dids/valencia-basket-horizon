@@ -16,6 +16,16 @@
   type="module"
 ></script>
 
+{% comment %} Script para manejar enlaces de productos en colecciones de jugador {% endcomment %}
+<script
+  src="{{ 'player-collection-detector.js' | asset_url }}"
+  defer
+></script>
+<script
+  src="{{ 'collection-product-links.js' | asset_url }}"
+  defer
+></script>
+
 {% javascript %}
   const url = new URL(window.location.href);
   if (url.hash) {

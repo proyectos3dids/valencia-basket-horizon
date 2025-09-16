@@ -488,6 +488,7 @@ class RenderHandler {
     // SIEMPRE convertir nombre a mayúsculas para renderizado en canvas
     const displayName = name ? name.toString().toUpperCase() : name;
     
+    
     if (!this._validate()) {
       return;
     }
@@ -498,7 +499,9 @@ class RenderHandler {
     
     // Forzar actualización inmediata del canvas
     initializeCanvas(() => {
+      
       for (const canvas of this.$canvas) {
+        
         const ctx = canvas.getContext("2d");
         
         // Obtener configuraciones dinámicas o usar valores por defecto
@@ -509,6 +512,7 @@ class RenderHandler {
         const threshold = settings.characterLimitThreshold || 7;
         const nameLength = displayName ? displayName.length : 0;
         let nameFontSize;
+        
         
         if (nameLength < threshold && nameLength > 0) {
           // Tamaño grande para el canvas
@@ -539,6 +543,7 @@ class RenderHandler {
         ctx.textAlign = "center";
         
         // Renderizar nombre si existe
+        
          if (displayName && displayName.trim()) {
            // Verificar explícitamente que la fuente esté disponible
            const isDaggerSquareAvailable = document.fonts.check(`${nameFontSize}px DaggerSquare`) || 
@@ -563,6 +568,7 @@ class RenderHandler {
          }
         
         // Renderizar número si existe
+        
         if (number && number.toString().trim()) {
                // Verificar explícitamente que la fuente esté disponible
                const isDaggerSquareAvailable = document.fonts.check(`${numberFontSize}px DaggerSquare`) || 
@@ -948,6 +954,7 @@ class ProductCustomization {
   }
   
   _debouncedRender(name, number, sponsor) {
+
     if (this.renderTimer) {
       clearTimeout(this.renderTimer);
     }
@@ -1289,6 +1296,7 @@ class ProductCustomization {
     const playerParam = this.searchParams.getPlayer();
     const genderParam = this.searchParams.getGender();
 
+
     // Si hay tipo de personalización en la URL, restaurarlo
       if (typeParam) {
          // Marcar que estamos restaurando desde URL
@@ -1334,9 +1342,20 @@ class ProductCustomization {
     const playerParam = this.searchParams.getPlayer();
     const genderParam = this.searchParams.getGender();
 
-    const player = this.player.players.find(player2 => player2.handle === playerParam);
+
+    let player = this.player.players.find(player2 => player2.handle === playerParam);
+    
+    // Si no se encuentra con handle exacto, intentar buscar sin el número
+    if (!player && playerParam) {
+      // Extraer el nombre base del handle (todo antes del último guión)
+      const baseName = playerParam.replace(/-\d+$/, '');
+      player = this.player.players.find(player2 => player2.handle === baseName);
+      
+    }
+    
     
     if (player) {
+
       this._selectVariant("player");
       
       // Si hay género en la URL, usarlo directamente
@@ -1351,10 +1370,12 @@ class ProductCustomization {
       this.player.selectPlayer(player.handle);
       this.form.set(player.name, player.number);
       
+      
       // Solo navegar a la segunda imagen si el jugador tiene nombre o número
       if (player.name || player.number) {
         this._navigateToTargetImage();
       }
+      
       
       // Forzar regeneración del canvas
       this._debouncedRender(player.name, player.number, this.selectedSponsor);
@@ -1367,10 +1388,13 @@ class ProductCustomization {
   _navigateToTargetImage() {
     // Find the slideshow component in the product media gallery
     const slideshow = document.querySelector('slideshow-component');
+    const navigationIndex = (window.productCustomizerSettings?.navigationImageIndex || 2) - 1;
+    
+    
     if (slideshow && slideshow.select) {
       // Navigate to the configured navigation image (convert from 1-based to 0-based index)
-      const navigationIndex = (window.productCustomizerSettings?.navigationImageIndex || 2) - 1;
       slideshow.select(navigationIndex);
+    } else {
     }
   }
 }

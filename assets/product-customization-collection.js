@@ -247,17 +247,19 @@ class CollectionCustomizationManager {
             const nameLength = displayName.length;
             let nameFontSize;
             
-            if (nameLength < threshold && nameLength > 0) {
-              nameFontSize = settings.largeFontSize || 24;
+            
+            if (nameLength <= threshold && nameLength > 0) {
+              // Usar la misma lógica que en producto individual con multiplicador ajustado para colecciones
+              nameFontSize = (settings.largeFontSize || 24) * 1.2; // Multiplicador para colecciones
             } else if (nameLength > 0) {
-              nameFontSize = settings.smallFontSize || 18;
+              // Usar la misma lógica que en producto individual con multiplicador ajustado para colecciones
+              nameFontSize = (settings.smallFontSize || 18) * 1.0; // Multiplicador para colecciones
             } else {
               nameFontSize = settings.nameSize || 37;
             }
             
-            // Escalar el tamaño para el canvas pequeño de la colección
-            const nameScalingFactor = 1.0;
-            const scaledNameSize = Math.max(16, nameFontSize * nameScalingFactor);
+            // Ya no necesitamos factor de escalado adicional porque ya está incluido arriba
+            const scaledNameSize = Math.max(16, nameFontSize);
             
             const finalNameFont = `${scaledNameSize}px DaggerSquare, Arial, sans-serif`;
             context.font = finalNameFont;
