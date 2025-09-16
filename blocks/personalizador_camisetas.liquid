@@ -201,13 +201,17 @@
         {% if block.settings.enable_player_option %}
         <div class="customization-option male-player-option" data-value="player" onclick="selectCustomizationType(this)">
           <span class="option-text">{{ block.settings.player_option_text | default: 'Jugador' }}</span>
+          {% unless block.settings.free_customization %}
           <span class="option-price">+15€</span>
+          {% endunless %}
         </div>
         {% endif %}
         {% if block.settings.enable_female_player_option %}
         <div class="customization-option female-player-option" data-value="player" onclick="selectCustomizationType(this)">
           <span class="option-text">{{ block.settings.female_player_option_text | default: 'Jugadora' }}</span>
+          {% unless block.settings.free_customization %}
           <span class="option-price">+15€</span>
+          {% endunless %}
         </div>
         {% endif %}
       {% else %}
@@ -215,14 +219,18 @@
         {% if block.settings.enable_player_option %}
         <div class="customization-option male-player-option" data-value="player" onclick="selectCustomizationType(this)">
           <span class="option-text">{{ block.settings.player_option_text | default: 'Jugador' }}</span>
+          {% unless block.settings.free_customization %}
           <span class="option-price">+15€</span>
+          {% endunless %}
         </div>
         {% endif %}
       {% endif %}
       {% if block.settings.enable_custom_option %}
       <div class="customization-option" data-value="user" onclick="selectCustomizationType(this)">
         <span class="option-text">Personalizado</span>
+        {% unless block.settings.free_customization %}
         <span class="option-price">+15€</span>
+        {% endunless %}
       </div>
       {% endif %}
     </div>
