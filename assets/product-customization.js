@@ -847,8 +847,49 @@ class AddToCartButtonHandler {
 
   _showQuickBuy() {
      if (this.quickBuyContainer) {
-       console.log('🛒 Showing quick buy button - no customization active');
-       this.quickBuyContainer.style.display = '';
+       console.log('🔍 DEBUG: _showQuickBuy() llamada - iniciando verificaciones');
+       
+       // Verificar si hay un selector de parche habilitado
+       const teamPatchWrapper = document.getElementById('team-patch-selection-wrapper');
+       const isPatchSelectorVisible = teamPatchWrapper && teamPatchWrapper.style.display !== 'none';
+       console.log('🔍 DEBUG: teamPatchWrapper encontrado:', !!teamPatchWrapper);
+       console.log('🔍 DEBUG: isPatchSelectorVisible:', isPatchSelectorVisible);
+       
+       // También verificar si el selector está habilitado en la configuración
+       const enableTeamPatchElement = document.querySelector('[data-enable-team-patch]');
+       console.log('🔍 DEBUG: enableTeamPatchElement encontrado:', !!enableTeamPatchElement);
+       
+       if (enableTeamPatchElement) {
+         console.log('🔍 DEBUG: data-enable-team-patch valor:', enableTeamPatchElement.dataset.enableTeamPatch);
+       }
+       
+       const enableTeamPatch = enableTeamPatchElement ? enableTeamPatchElement.dataset.enableTeamPatch === 'true' : false;
+       console.log('🔍 DEBUG: enableTeamPatch final:', enableTeamPatch);
+       
+       // NUEVA VERIFICACIÓN: Comprobar si hay una selección de parche activa
+       const teamPatchField = document.querySelector('input[name="properties[Parche]"]');
+       const hasActiveTeamPatch = teamPatchField && teamPatchField.value && teamPatchField.value !== '';
+       console.log('🔍 DEBUG: teamPatchField encontrado:', !!teamPatchField);
+       console.log('🔍 DEBUG: teamPatchField valor:', teamPatchField ? teamPatchField.value : 'N/A');
+       console.log('🔍 DEBUG: hasActiveTeamPatch:', hasActiveTeamPatch);
+       
+       // Verificar el estado actual del botón
+       console.log('🔍 DEBUG: quickBuyContainer display actual:', this.quickBuyContainer.style.display);
+       
+       // Ocultar si: el selector está habilitado O visible O hay una selección activa
+       if (enableTeamPatch || isPatchSelectorVisible || hasActiveTeamPatch) {
+         console.log('🛒 OCULTANDO: Keeping quick buy button hidden - patch selector is enabled, active, or has selection');
+         console.log('🔍 DEBUG: Razones - enableTeamPatch:', enableTeamPatch, 'isPatchSelectorVisible:', isPatchSelectorVisible, 'hasActiveTeamPatch:', hasActiveTeamPatch);
+         this.quickBuyContainer.style.display = 'none';
+       } else {
+         console.log('🛒 MOSTRANDO: Showing quick buy button - no customization active and no patch selector');
+         console.log('🔍 DEBUG: Razones - enableTeamPatch:', enableTeamPatch, 'isPatchSelectorVisible:', isPatchSelectorVisible, 'hasActiveTeamPatch:', hasActiveTeamPatch);
+         this.quickBuyContainer.style.display = '';
+       }
+       
+       console.log('🔍 DEBUG: quickBuyContainer display después:', this.quickBuyContainer.style.display);
+     } else {
+       console.log('🔍 DEBUG: quickBuyContainer NO encontrado');
      }
    }
 

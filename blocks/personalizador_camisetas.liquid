@@ -2,10 +2,24 @@
   Sección de personalización de camisetas con sliders para configurar posición y tamaño
 {% endcomment %}
 
+<div data-enable-team-patch="{{ section.settings.enable_team_patch }}" style="display: none;"></div>
+
 <script>
   // Establecer variable global para el estado de los controles avanzados
   window.personalizadorDebugMode = true; // Temporalmente habilitado para diagnosticar
   window.isUnisexProduct = {{ block.settings.is_unisex_product | json }};
+  
+  // Debug: Verificar el valor de enable_team_patch
+  console.log('🔍 DEBUG INICIAL: enable_team_patch desde Liquid:', {{ section.settings.enable_team_patch | json }});
+  
+  // Verificar que el elemento data-enable-team-patch esté disponible
+  document.addEventListener('DOMContentLoaded', function() {
+    const enableTeamPatchElement = document.querySelector('[data-enable-team-patch]');
+    console.log('🔍 DEBUG DOM: enableTeamPatchElement encontrado:', !!enableTeamPatchElement);
+    if (enableTeamPatchElement) {
+      console.log('🔍 DEBUG DOM: data-enable-team-patch valor:', enableTeamPatchElement.dataset.enableTeamPatch);
+    }
+  });
   
   // Funcionalidad para productos unisex - ahora integrada en las opciones principales
   document.addEventListener('DOMContentLoaded', function() {
@@ -48,6 +62,15 @@
         formField.value = patchText;
       }
       
+      // Ocultar botones de compra rápida cuando se selecciona un parche
+      const quickBuyContainer = document.querySelector('.accelerated-checkout-block');
+      if (quickBuyContainer) {
+        quickBuyContainer.style.display = 'none';
+        if (window.personalizadorDebugMode) {
+          console.log('Ocultando botones de compra rápida debido a selección de parche');
+        }
+      }
+      
       if (window.personalizadorDebugMode) {
         console.log('Parche de equipo seleccionado:', selectedPatch);
         console.log('Campo del formulario actualizado:', formField ? formField.value : 'Campo no encontrado');
@@ -62,6 +85,14 @@
       if (!enableTeamPatch) {
         if (window.personalizadorDebugMode) {
           console.log('Parche deshabilitado en settings - no inicializando');
+        }
+        // Si el selector de parche está deshabilitado, asegurar que los botones de compra rápida estén visibles
+        const quickBuyContainer = document.querySelector('.accelerated-checkout-block');
+        if (quickBuyContainer) {
+          quickBuyContainer.style.display = '';
+          if (window.personalizadorDebugMode) {
+            console.log('Mostrando botones de compra rápida - selector de parche deshabilitado');
+          }
         }
         return;
       }
@@ -84,6 +115,15 @@
       }
       if (hiddenField) {
         hiddenField.value = 'male';
+      }
+      
+      // Ocultar botones de compra rápida cuando el selector de parche está habilitado
+      const quickBuyContainer = document.querySelector('.accelerated-checkout-block');
+      if (quickBuyContainer) {
+        quickBuyContainer.style.display = 'none';
+        if (window.personalizadorDebugMode) {
+          console.log('Ocultando botones de compra rápida - selector de parche habilitado');
+        }
       }
       
       // Si existe el elemento visual, también actualizarlo
@@ -190,22 +230,6 @@
   </div>
   
   <!-- Selector de género eliminado - ahora se maneja con opciones separadas de jugador/jugadora -->
-  
-  {% if block.settings.enable_team_patch_selection or block.settings.show_advanced_controls %}
-  <!-- Selector de parche de equipo -->
-  <div class="team-patch-selection-wrapper" id="team-patch-selection-wrapper" style="display: {% if block.settings.enable_team_patch_selection %}block{% else %}none{% endif %};">
-    <label class="customization-label">Seleccionar parche de equipo:</label>
-    <div class="team-patch-options">
-      <div class="team-patch-option active" data-value="male" onclick="selectTeamPatch(this)">
-        <span class="option-text">Parche Masculino</span>
-      </div>
-      <div class="team-patch-option" data-value="female" onclick="selectTeamPatch(this)">
-        <span class="option-text">Parche Femenino</span>
-      </div>
-    </div>
-    <input type="hidden" id="selected_team_patch" name="selected_team_patch" value="{% if block.settings.enable_team_patch_selection %}male{% endif %}">
-  </div>
-  {% endif %}
   
   <div class="customization-controls" id="customization-controls">
     {% if block.settings.show_advanced_controls %}
@@ -423,6 +447,22 @@
    </div>
   {% render 'customization-players', metaobject_definition: block.settings.players_metaobject_definition %}
   
+  {% if block.settings.enable_team_patch_selection or block.settings.show_advanced_controls %}
+  <!-- Selector de parche de equipo -->
+  <div class="team-patch-selection-wrapper" id="team-patch-selection-wrapper" style="display: {% if block.settings.enable_team_patch_selection %}block{% else %}none{% endif %};">
+    <label class="customization-label">Seleccionar parche de equipo:</label>
+    <div class="team-patch-options">
+      <div class="team-patch-option active" data-value="male" onclick="selectTeamPatch(this)">
+        <span class="option-text">Parche Masculino</span>
+      </div>
+      <div class="team-patch-option" data-value="female" onclick="selectTeamPatch(this)">
+        <span class="option-text">Parche Femenino</span>
+      </div>
+    </div>
+    <input type="hidden" id="selected_team_patch" name="selected_team_patch" value="{% if block.settings.enable_team_patch_selection %}male{% endif %}">
+  </div>
+  {% endif %}
+  
   <!-- Campos de usuario personalizado -->
   <div id="customization_user_wrapper" class="customization-user-wrapper" hidden>
     <div class="customization-field">
@@ -545,6 +585,10 @@
     }
     
     window.selectCustomizationType = function(element) {
+      console.log('🔍 DEBUG: ===== INICIO selectCustomizationType =====');
+      console.log('🔍 DEBUG: Elemento recibido:', element);
+      console.log('🔍 DEBUG: dataset.value:', element.dataset.value);
+      
       const playerEnabled = {{ block.settings.enable_player_option | json }};
       const femalePlayerEnabled = {{ block.settings.enable_female_player_option | json }};
       const customEnabled = {{ block.settings.enable_custom_option | json }};
@@ -556,6 +600,13 @@
         classList: element.classList.toString(),
         isMale: element.classList.contains('male-player-option'),
         isFemale: element.classList.contains('female-player-option')
+      });
+      
+      console.log('🔍 DEBUG: Configuraciones del bloque:', {
+        playerEnabled: playerEnabled,
+        femalePlayerEnabled: femalePlayerEnabled,
+        customEnabled: customEnabled,
+        isUnisexProduct: isUnisexProduct
       });
       
       // Prevenir selección de opciones deshabilitadas
@@ -606,10 +657,97 @@
       // Mostrar el selector de parche siempre que el setting esté activo
       const enableTeamPatch = {{ block.settings.enable_team_patch_selection | json }};
       
+      console.log('🔍 DEBUG: ===== CONTROL BOTÓN COMPRA RÁPIDA =====');
+      console.log('🔍 DEBUG: enableTeamPatch (block.settings):', enableTeamPatch);
+      console.log('🔍 DEBUG: value seleccionado:', value);
+      
+      // Controlar la visibilidad del botón de compra rápida
+      const quickBuyButton = document.querySelector('.accelerated-checkout-block');
+      console.log('🔍 DEBUG: quickBuyButton encontrado:', !!quickBuyButton);
+      
+      if (enableTeamPatch) {
+        // Si el selector de parche está habilitado, SIEMPRE ocultar el botón de compra rápida
+        console.log('🔍 DEBUG: RAMA enableTeamPatch = true - OCULTANDO botón');
+        if (quickBuyButton) {
+          quickBuyButton.style.display = 'none';
+          console.log('🔍 DEBUG: quickBuyButton.style.display establecido a "none"');
+          if (window.personalizadorDebugMode) {
+            console.log('🚫 Ocultando botón de compra rápida - selector de parche habilitado (valor: ' + value + ')');
+          }
+        }
+      } else {
+        console.log('🔍 DEBUG: RAMA enableTeamPatch = false - evaluando valor');
+        // Si el selector de parche está deshabilitado, mostrar el botón solo para "Sin personalización"
+        if (quickBuyButton) {
+          if (value === 'none') {
+            console.log('🔍 DEBUG: value === "none" - MOSTRANDO botón');
+            quickBuyButton.style.display = 'block';
+            if (window.personalizadorDebugMode) {
+              console.log('✅ Mostrando botón de compra rápida - sin personalización y sin selector de parche');
+            }
+          } else {
+            quickBuyButton.style.display = 'none';
+            if (window.personalizadorDebugMode) {
+              console.log('🚫 Ocultando botón de compra rápida - hay personalización');
+            }
+          }
+        }
+      }
+      
+      // Notificar al sistema de personalización sobre el cambio
+      if (window.productCustomization && window.productCustomization.buttonHandler) {
+        // Forzar la actualización del estado del botón de compra rápida
+        setTimeout(() => {
+          if (enableTeamPatch) {
+            // Si hay selector de parche, SIEMPRE ocultar sin importar el valor
+            window.productCustomization.buttonHandler._hideQuickBuy();
+            if (window.personalizadorDebugMode) {
+              console.log('🔄 Sistema sincronizado: ocultando botón - selector de parche habilitado');
+            }
+          } else if (value === 'none') {
+            // Solo si no hay selector de parche y es "sin personalización", mostrar
+            window.productCustomization.buttonHandler._showQuickBuy();
+            if (window.personalizadorDebugMode) {
+              console.log('🔄 Sistema sincronizado: mostrando botón - sin personalización y sin selector');
+            }
+          } else {
+            // Si hay personalización, ocultar
+            window.productCustomization.buttonHandler._hideQuickBuy();
+            if (window.personalizadorDebugMode) {
+              console.log('🔄 Sistema sincronizado: ocultando botón - hay personalización');
+            }
+          }
+        }, 50);
+      }
+      
       if (enableTeamPatch) {
         // Mostrar selector de parche siempre que el setting esté activo
         if (teamPatchSelectionWrapper) {
           teamPatchSelectionWrapper.style.display = 'block';
+          
+          // LIMPIAR VALORES DEL PARCHE CUANDO SE SELECCIONA "SIN PERSONALIZACIÓN"
+          if (value === 'none') {
+            const formField = document.getElementById('product_form_team_patch');
+            const hiddenField = document.getElementById('selected_team_patch');
+            
+            // Limpiar completamente los valores del parche
+            if (formField) {
+              formField.value = '';
+              console.log('🧹 Campo formulario parche limpiado (enableTeamPatch=true, value=none)');
+            }
+            if (hiddenField) {
+              hiddenField.value = '';
+              console.log('🧹 Campo oculto parche limpiado (enableTeamPatch=true, value=none)');
+            }
+            
+            // Remover clases activas de opciones de parche
+            const patchOptions = document.querySelectorAll('.team-patch-option');
+            patchOptions.forEach(opt => opt.classList.remove('active'));
+            
+            if (window.personalizadorDebugMode) {
+              console.log('🧹 Valores de parche limpiados para "Sin personalización" con selector habilitado');
+            }
+          }
           
           // Solo configurar parche por defecto si hay personalización
           if (value === 'player' || customizationType === 'male-player' || customizationType === 'female-player' || value === 'user') {
@@ -662,17 +800,40 @@
         // Cuando el setting está deshabilitado, ocultar selector de parche y limpiar valores
         if (teamPatchSelectionWrapper) {
           teamPatchSelectionWrapper.style.display = 'none';
-          // Solo limpiar valor del parche si ya tenía un valor
+          // Limpiar valores del parche cuando se selecciona "Sin personalización"
           const formField = document.getElementById('product_form_team_patch');
           const hiddenField = document.getElementById('selected_team_patch');
-          if (formField && formField.value !== '') {
-            formField.value = '';
+          
+          if (value === 'none') {
+            // Limpiar completamente los valores del parche
+            if (formField) {
+              formField.value = '';
+              console.log('🧹 Campo formulario parche limpiado');
+            }
+            if (hiddenField) {
+              hiddenField.value = '';
+              console.log('🧹 Campo oculto parche limpiado');
+            }
+            
+            // Remover clases activas de opciones de parche
+            const patchOptions = document.querySelectorAll('.team-patch-option');
+            patchOptions.forEach(opt => opt.classList.remove('active'));
+            
             if (window.personalizadorDebugMode) {
-              console.log('Limpiando parche por setting deshabilitado');
+              console.log('🧹 Valores de parche limpiados para "Sin personalización"');
+            }
+          } else {
+            // Para otros valores, limpiar si ya tenían valor
+            if (formField && formField.value !== '') {
+              formField.value = '';
+              if (window.personalizadorDebugMode) {
+                console.log('Limpiando parche por setting deshabilitado');
+              }
+            }
+            if (hiddenField && hiddenField.value !== '') {
+              hiddenField.value = '';
             }
           }
-          if (hiddenField && hiddenField.value !== '') {
-            hiddenField.value = '';
            }
          }
           }
