@@ -1,0 +1,39 @@
+<section class="page-width">
+  <div id="seifti_wrap" style="max-width:860px;width:100%;margin:50px auto">
+    <div style="text-align:center">
+      <img src="https://ext.seifti.io/imgs/loader.gif" alt="Cargando…">
+    </div>
+  </div>
+
+  <script>
+  (async () => {
+    try {
+      const lang = (document.documentElement.getAttribute('lang') || (navigator.language||'es')).split('-')[0];
+      const url  = 'https://ext.seifti.io/cms/document/html?l=' + lang +
+                   '&c=100mxo32EDItY1Z2L1MJMDWuOJcvMdXTBXAuZQdBlQOHM7ga1QlphrK2y10R12FJcXJRkktgQmRxB2sOSQN3WsNfP9IRWTAjE18cEd0XIJ7aE2';
+
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+
+      const html = await res.text();
+      const wrap = document.getElementById('seifti_wrap');
+      wrap.innerHTML = html;
+
+      // Re-ejecutar <script> que lleguen dentro del HTML
+      wrap.querySelectorAll('script').forEach(s => {
+        const n = document.createElement('script');
+        if (s.src) { n.src = s.src; n.async = s.async; n.defer = s.defer; }
+        else { n.textContent = s.textContent; }
+        document.head.appendChild(n);
+        s.remove();
+      });
+    } catch (e) {
+      console.error('Seifti policy error:', e);
+      const wrap = document.getElementById('seifti_wrap');
+      if (wrap) wrap.innerHTML = '<p>No se pudo cargar la política en este momento.</p>';
+    }
+  })();
+  </script>
+
+  <style>#seifti_wrap *{font-family:inherit!important;}</style>
+</section>
