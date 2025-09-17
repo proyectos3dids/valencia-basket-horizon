@@ -41,16 +41,27 @@
       {% sections 'header-group' %}
     </div>
 
-    <main
-      id="MainContent"
-      class="content-for-layout"
-      role="main"
-      data-page-transition-enabled="{{ settings.page_transition_enabled }}"
-      data-product-transition="{{ settings.transition_to_main_product }}"
-      data-template="{{ template }}"
-    >
-      {{ content_for_layout }}
-    </main>
+<main
+  id="MainContent"
+  class="content-for-layout"
+  role="main"
+  data-page-transition-enabled="{{ settings.page_transition_enabled }}"
+  data-product-transition="{{ settings.transition_to_main_product }}"
+  data-template="{{ template }}"
+>
+  {% if request.path contains '/policies/privacy-policy' %}
+    {% render 'seifti-policy' %}
+    <style>
+      /* Oculta el contenido por defecto de Shopify en esta URL */
+      .shopify-policy__container { display: none !important; }
+      main .rte.shopify-policy__body,
+      main .rte--policy,
+      main .shopify-policy { display: none !important; }
+    </style>
+  {% else %}
+    {{ content_for_layout }}
+  {% endif %}
+</main>
 
     {% sections 'footer-group' %}
 
