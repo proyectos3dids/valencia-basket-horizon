@@ -1438,7 +1438,7 @@
           "name": "t:names.collection_card",
           "static": true,
           "settings": {
-            "collection": "{{ closest.collection }}",
+            "collection": "1a-equipacion-2526",
             "placement": "on_image",
             "horizontal_alignment": "flex-start",
             "vertical_alignment": "flex-end",
@@ -1509,7 +1509,7 @@
       "settings": {
         "collection_list": [],
         "layout_type": "bento",
-        "carousel_on_mobile": false,
+        "carousel_on_mobile": true,
         "columns": 4,
         "mobile_columns": "2",
         "columns_gap": 8,
